@@ -28,7 +28,7 @@ Within the project directory, there are three directories. The data directory (_
 OWDM experiment, which we will be analyzing. The raw data is in the form of XDF files, where one of the streams 
 contains the eye tracker timeseries data and the eyetracker specs. To extract the relevant eyetracker information from the XDF files
 (**timestamps, left_pupil_size, and right_pupil_size**), run the following line of code in the main.py file.
-```commandline
+```doctest
 sourcing_utils.process_xdf_files(folder_path, output_folder)
 ```
 
@@ -42,7 +42,7 @@ an output CSV file called _compiled_blink_rates.csv_ is generated (in the _outpu
 subject, day ,blink_rate_mean, and percentage_missing_data, which states the blink rate and percentage of relevant missing data from 
 each participant for each day. 
 
-```commandline
+```doctest
 processing_utils.process_csv_files(output_folder)
 ```
 
@@ -53,10 +53,13 @@ sourcing_utils.process_xdf_files(folder_path, output_folder)
 ```
 
 we can create graphs that plot time against pupil size for each day for each participant. 
-Once you run the following line of code in main.py, one plot for each day for each participant will be geenrated in
+Once you run the following line of code in main.py, one plot for each day for each participant will be generated in
 the directory (_output/plots_). In addition to the lines that show the trend of left and right pupil size 
 against time, there will be pink and green lines, where the green represents times at which the blink detection algorithm recognized 
 a blink onset, and pink represents times at which the blink detection algorithm recognized a blink offset.
+```doctest
+plotting_utils.plot_all_time_v_pupil_size_csv_files_in_directory(output_folder)
+```
 
 ## Gallery
 Here is an example of a zoomed in plot outcome:
