@@ -13,4 +13,4 @@ output_folder = 'output'
 processing_utils.process_csv_files(output_folder)
 
 # Plot time vs pupil size for all participants and save to output/plots
-plotting_utils.plot_all_time_v_pupil_size_csv_files_in_directory(output_folder)
+#plotting_utils.plot_all_time_v_pupil_size_csv_files_in_directory(output_folder)

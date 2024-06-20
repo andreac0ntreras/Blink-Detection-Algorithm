@@ -48,8 +48,8 @@ def process_individual_csv(csv_file, folder):
     print("Average Blink Rate for", csv_file, "(blinks per minute):", average_blink_rate)
 
     # Return results as a dictionary
-    return {'Subject': subject_id, 'Day': day_number, 'Average Blink Rate': average_blink_rate,
-            'Percentage Missing Data': np.mean(missing_data_correct)}
+    return {'subject': subject_id, 'day': day_number, 'blink_rate_mean': average_blink_rate,
+            'percentage_missing_data': np.mean(missing_data_correct)}
 
 
 def process_csv_files(folder):

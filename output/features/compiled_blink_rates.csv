@@ -1,4 +1,4 @@
-Subject,Day,Average Blink Rate,Percentage Missing Data
+subject,day,blink_rate_mean,percentage_missing_data
 sub-025,d01,3.0742767215034674,0.01149848053639477
 sub-025,d02,1.5193719929095972,0.0
 sub-025,d03,2.6046377021307383,0.0
