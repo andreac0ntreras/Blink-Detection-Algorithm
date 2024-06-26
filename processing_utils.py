@@ -96,6 +96,7 @@ def missing_data_index(pupil_size_left, pupil_size_right, sampling_freq, timesta
 
     # Combine pupil size data and detect blinks (functions not included)
     missing_pupil_size = np.isnan(pupil_size_left) & np.isnan(pupil_size_right)
+    print(np.mean(missing_pupil_size))
     blinks = blink_detection_utils.based_noise_blinks_detection(pupil_size_left, pupil_size_right, sampling_freq,
                                                                 timestamps)
     blink_onsets = blinks['blink_onset']

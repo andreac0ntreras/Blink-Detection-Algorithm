@@ -39,34 +39,6 @@ def smooth(x, window_len):
     return y
 
 
-'''
-def smooth(x, window_len):
-    """
-    Python implementation of matlab's smooth function
-
-    Smoothes the input data using a simple moving average.
-    """
-    if window_len < 3:
-        return x
-
-    # Window length must be odd
-    if window_len % 2 == 0:
-        window_len += 1
-
-    w = np.ones(window_len)
-    y = np.convolve(w, x, mode='valid') / len(w)
-    y = np.hstack((x[:window_len // 2], y, x[len(x) - window_len // 2:]))
-
-    for i in range(0, window_len // 2):
-        y[i] = np.sum(y[0: i + i]) / ((2 * i) + 1)
-
-    for i in range(len(x) - window_len // 2, len(x)):
-        y[i] = np.sum(y[i - (len(x) - i - 1): i + (len(x) - i - 1)]) / ((2 * (len(x) - i - 1)) + 1)
-
-    return y
-    '''
-
-
 def preprocess_nan_periods(pupil_size_left, pupil_size_right, sampling_freq):
     """
     Preprocesses pupil size data by converting isolated non-NaN values to NaNs
@@ -88,7 +60,7 @@ def preprocess_nan_periods(pupil_size_left, pupil_size_right, sampling_freq):
     pupil_size_left_processed = pupil_size_left.copy()
     pupil_size_right_processed = pupil_size_right.copy()
 
-    # Calculate number of samples corresponding to 50ms
+    # Calculate number of samples corresponding to 50ms see
     samples_to_nan = int(0.035 * sampling_freq)
 
     # Flag indices where both left and right pupil sizes are NaN
@@ -210,12 +182,15 @@ def based_noise_blinks_detection(pupil_size_left, pupil_size_right, sampling_fre
     # calculated window length (samples2smooth). The result is converted to a numpy array
     smooth_right_pupil_size = np.array(smooth(processed_pupil_size_right, samples2smooth), dtype='float32')
 
-    # smooth_pupil_size applies the smooth function to the right pupil size data using the
+    # smooth_pupil_size applies the smooth function to the left pupil size data using the
     # calculated window length (samples2smooth). The result is converted to a numpy array
     smooth_left_pupil_size = np.array(smooth(processed_pupil_size_left, samples2smooth), dtype='float32')
 
     # Combine smoothed left and right pupil size data
     smooth_pupil_size = (smooth_left_pupil_size + smooth_right_pupil_size) / 2
+
+    # What if blink on one and missing on other????
+    # See how timestamps line up
 
     # Compute the difference (smooth_pupil_size_diff) of the smoothed data.
     smooth_pupil_size_diff = diff(smooth_pupil_size)
