@@ -53,6 +53,12 @@ def process_individual_csv(csv_file, folder):
     # Calculate the average blink rate considering missing data periods
     right_average_blink_rate = calculate_blink_rate(right_blinks, right_missing_data_correct, 600)
 
+    # Calculate average blink duration and blink duration variability
+    left_average_blink_duration = calculate_average_blink_duration(left_blinks)
+    right_average_blink_duration = calculate_average_blink_duration(right_blinks)
+    left_blink_duration_variability = calculate_blink_duration_variability(left_blinks)
+    right_blink_duration_variability = calculate_blink_duration_variability(right_blinks)
+
     # Calculate the concatenated onsets and offsets based on how closely the onsets anf offsets of the left and right
     # pupil match
     concat_onsets, concat_offsets = identify_concat_blinks(left_blinks, right_blinks)
@@ -68,6 +74,10 @@ def process_individual_csv(csv_file, folder):
         'concatenated_offsets': concat_offsets,
         'left_average_blink_rate': left_average_blink_rate,
         'right_average_blink_rate': right_average_blink_rate,
+        'left_average_blink_duration': left_average_blink_duration,
+        'right_average_blink_duration': right_average_blink_duration,
+        'left_blink_duration_variability': left_blink_duration_variability,
+        'right_blink_duration_variability': right_blink_duration_variability,
         'left_missing_data_percentage': np.mean(left_missing_data),
         'right_missing_data_percentage': np.mean(right_missing_data)
     }
@@ -101,6 +111,36 @@ def calculate_blink_rate(blinks, missing_values, sampling_freq):
     average_blink_rate = total_blinks / duration_in_minutes
 
     return average_blink_rate
+
+
+def calculate_average_blink_duration(blinks):
+    """
+    Calculate the average blink duration from blink onset and offset times.
+
+    Parameters:
+    blinks (DataFrame): DataFrame containing 'blink_onset' and 'blink_offset' columns.
+
+    Returns:
+    float: Average blink duration in seconds.
+    """
+    blink_durations = np.array(blinks['blink_offset']) - np.array(blinks['blink_onset'])
+    average_blink_duration = np.mean(blink_durations)
+    return average_blink_duration
+
+
+def calculate_blink_duration_variability(blinks):
+    """
+    Calculate the blink duration variability (standard deviation of blink durations).
+
+    Parameters:
+    blinks (DataFrame): DataFrame containing 'blink_onset' and 'blink_offset' columns.
+
+    Returns:
+    float: Standard deviation of blink durations in seconds.
+    """
+    blink_durations = np.array(blinks['blink_offset']) - np.array(blinks['blink_onset'])
+    blink_duration_variability = np.std(blink_durations)
+    return blink_duration_variability
 
 
 def identify_concat_blinks(left_blinks, right_blinks, tolerance=.1):
