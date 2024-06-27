@@ -172,9 +172,9 @@ def identify_concat_blinks(left_blinks, right_blinks, tolerance=.1):
     i, j = 0, 0
     while i < len(left_onsets) and j < len(right_onsets):
         if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
-            concat_onsets.append(max(left_onsets[i], right_onsets[j]))
+            concat_onsets.append(np.mean([left_onsets[i], right_onsets[j]]))
             if i < len(left_offsets) and j < len(right_offsets):
-                concat_offsets.append(max(left_offsets[i], right_offsets[j]))
+                concat_offsets.append(np.mean([left_offsets[i], right_offsets[j]]))
             i += 1
             j += 1
         elif left_onsets[i] < right_onsets[j]:
