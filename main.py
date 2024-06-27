@@ -1,6 +1,4 @@
-import plotting_utils
-import processing_utils
-import sourcing_utils
+from utils import processing_utils, plotting_utils
 
 # Define folder paths
 folder_path = 'data/raw/XDF Files'

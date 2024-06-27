@@ -1,5 +1,4 @@
-import feature_extraction_utils
-import blink_detection_utils
+from utils import feature_extraction_utils, blink_detection_utils
 import pandas as pd
 import os
 import numpy as np
@@ -32,7 +31,11 @@ def process_individual_csv(csv_file, folder):
     pupil_size_right = dataframe['pupil_size_right']
 
     # Detect blinks using a separate function (not included here)
-    blinks = blink_detection_utils.based_noise_blinks_detection(pupil_size_left, pupil_size_right, 600, timestamps)
+    blinks = blink_detection_utils.both_pupils_blink_detection(pupil_size_left, pupil_size_right, 600, timestamps)
+
+    # Percentage of total missing data
+    left_pupil_missing_data = np.mean(np.isnan(pupil_size_left))
+    right_pupil_missing_data = np.mean(np.isnan(pupil_size_right))
 
     # Identify missing data indices for both pupil size columns
     missing_data = missing_data_index(pupil_size_left, pupil_size_right, 600, timestamps)
@@ -49,7 +52,9 @@ def process_individual_csv(csv_file, folder):
 
     # Return results as a dictionary
     return {'subject': subject_id, 'day': day_number, 'blink_rate_mean': average_blink_rate,
-            'percentage_missing_data': np.mean(missing_data_correct)}
+            'percentage_missing_data': np.mean(missing_data_correct),
+            'left_pupil_missing_data': left_pupil_missing_data,
+            'right_pupil_missing_data': right_pupil_missing_data}
 
 
 def process_csv_files(folder):
@@ -97,7 +102,7 @@ def missing_data_index(pupil_size_left, pupil_size_right, sampling_freq, timesta
     # Combine pupil size data and detect blinks (functions not included)
     missing_pupil_size = np.isnan(pupil_size_left) & np.isnan(pupil_size_right)
     print(np.mean(missing_pupil_size))
-    blinks = blink_detection_utils.based_noise_blinks_detection(pupil_size_left, pupil_size_right, sampling_freq,
+    blinks = blink_detection_utils.both_pupils_blink_detection(pupil_size_left, pupil_size_right, sampling_freq,
                                                                 timestamps)
     blink_onsets = blinks['blink_onset']
     blink_offsets = blinks['blink_offset']

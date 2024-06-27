@@ -2,166 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-
-
-def diff(series):
-    """
-    Python implementation of matlab's diff function
-
-    Computes the difference between consecutive elements in a series
-    """
-    return series[1:] - series[:-1]
-
-
-def smooth(x, window_len):
-    """
-    Python implementation of matlab's smooth function
-
-    Smoothes the input data using a simple moving average.
-    """
-    if window_len < 3:
-        return x
-
-    # Window length must be odd
-    if window_len % 2 == 0:
-        window_len += 1
-
-    # Create a window of ones for averaging
-    w = np.ones(window_len) / window_len
-
-    # Perform convolution with the window
-    y = np.convolve(w, x, mode='same')
-
-    return y
-
-
-def pupil_separated_blink_detection(pupil_size, sampling_freq, timestamps):
-    """
-    Function to find blinks and return blink onset and offset indices
-    Adapted from: R. Hershman, A. Henik, and N. Cohen, “A novel blink detection method based on pupillometry noise,”
-    Behav. Res. Methods, vol. 50, no. 1, pp. 107–114, 2018.
-
-    Input:
-        pupil_size: A numpy array or list containing pupil size data for one eye.
-        sampling_freq: The sampling frequency of the eye-tracking hardware, given in Hz.
-        timestamps: A numpy array or list containing the timestamps corresponding to the pupil size
-    Output:
-        blinks: [dictionary] {"blink_onset", "blink_offset"}
-        containing numpy array/list of blink onset and offset indices
-    """
-
-    # sampling_interval represents the interval between samples in milliseconds. 1000/600=1.667ms
-    sampling_interval = 1000 / sampling_freq
-
-    # concat_gap_interval set to 50, representing the gap interval to concatenate close blinks or missing data periods.
-    # This means that 20*1.667=83.33ms. Time gap between blink offset and new blink onset must be more than 83.33ms
-    # to register as different blinks
-
-    # initializes output
-    blink_onset = []
-    blink_offset = []
-    blinks = {"blink_onset": blink_onset, "blink_offset": blink_offset}
-
-    # convert input to numpy arrays
-    processed_pupil_size = np.asarray(pupil_size)
-
-    # missing_data is an array where each element is 1 if pupil_size is NaN at that index, and 0 otherwise.
-    missing_data = np.array(np.isnan(processed_pupil_size), dtype="float32")
-
-    # difference is the difference between consecutive elements in missing data,
-    # highlighting transitions between 0 and 1
-    difference = np.diff(missing_data)
-
-    # blink_onset contains indices where difference is 1 (indicating a transition from non-missing to missing data)
-    blink_onset = (np.where(difference == 1)[0])
-
-    # blink_offset contains indices where difference is -1 (indicating a transition from missing to non-missing data,
-    # plus one index to capture the full blink)
-    blink_offset = (np.where(difference == -1)[0] + 1)
-
-    length_blinks = len(blink_offset) + len(blink_onset)
-
-    # Edge Case 1: No blinks
-    if length_blinks == 0:
-        return blinks
-
-    # Edge Case 2: the data starts with a blink. In this case, blink onset will be defined as the first missing value.
-    if (len(blink_onset) < len(blink_offset)) or ((len(blink_onset) == len(blink_offset)) and
-                                                  (blink_onset[0] > blink_offset[0])):
-        blink_onset = np.hstack((0, blink_onset))
-
-    # Edge Case 3: the data ends with a blink. In this case, blink offset will be defined as the last missing sample
-    if len(blink_offset) < len(blink_onset):
-        blink_offset = np.hstack((blink_offset, len(processed_pupil_size) - 1))
-
-    # Smoothing the data in order to increase the difference between the measurement noise and the eyelid signal.
-
-    # This sets the smoothing window to 10 milliseconds. This is a 10ms window adapted from Hershman et al.
-    ms_4_smoothing = 10
-
-    # samples2smooth calculates the number of samples corresponding to the 10-millisecond window,
-    # given the sampling frequency. (6 ms)
-    samples2smooth = int(ms_4_smoothing / sampling_interval)
-
-    # smooth_pupil_size applies the smooth function to the pupil size data using the
-    # calculated window length (samples2smooth). The result is converted to a numpy array
-    smooth_pupil_size = np.array(smooth(processed_pupil_size, samples2smooth), dtype='float32')
-
-    # Compute the difference (smooth_pupil_size_diff) of the smoothed data.
-    smooth_pupil_size_diff = np.diff(smooth_pupil_size)
-
-    monotonically_dec = smooth_pupil_size_diff <= 0
-    monotonically_inc = smooth_pupil_size_diff >= 0
-
-    # Finding correct blink onsets and offsets using monotonically increasing and decreasing arrays
-    for i in range(len(blink_onset)):
-        if blink_onset[i] != 0:
-            j = blink_onset[i] - 1
-            if monotonically_inc[j]:
-                blink_onset = np.delete(blink_onset, i)
-                blink_offset = np.delete(blink_offset, i)
-            while j > 0 and monotonically_dec[j]:
-                j -= 1
-            blink_onset[i] = j + 1
-
-        # If data ends with blink we do not update it and let ending blink index be the last
-        # index of the data
-        if blink_offset[i] != len(processed_pupil_size) - 1:
-            j = blink_offset[i]
-            if monotonically_dec[j]:
-                blink_onset = np.delete(blink_onset, i)
-                blink_offset = np.delete(blink_offset, i)
-            while j < len(monotonically_inc) and monotonically_inc[j]:
-                j += 1
-
-            blink_offset[i] = j
-
-    # creating empty array the size of the blink onsets and offsets combined
-    c = np.empty((len(blink_onset) + len(blink_offset),), dtype=blink_onset.dtype)
-
-    # places blink_onset values at even indices (0, 2, 4, ...).
-    c[0::2] = blink_onset
-
-    # places blink_offset values at odd indices (1, 3, 5, ...).
-    c[1::2] = blink_offset
-    c = list(c)
-
-    # Loop to remove events with durations not between 0.1s and 0.5s
-    i = 0
-    while i < len(c) - 1:
-        duration = c[i + 1] - c[i]
-        if duration < .1*sampling_freq or duration > .5*sampling_freq:
-            c.pop(i + 1)
-            c.pop(i)
-        else:
-            i += 2
-
-    temp = np.reshape(c, (-1, 2), order='C')
-
-    blinks["blink_onset"] = timestamps[temp[:, 0]]
-    blinks["blink_offset"] = timestamps[temp[:, 1]]
-
-    return blinks
+from utils import blink_detection_utils
 
 
 def process_individual_csv(csv_file, folder):
@@ -191,8 +32,8 @@ def process_individual_csv(csv_file, folder):
     pupil_size_right = dataframe['pupil_size_right']
 
     # Detect blinks using a separate function (not included here)
-    left_blinks = pupil_separated_blink_detection(pupil_size_left, 600, timestamps)
-    right_blinks = pupil_separated_blink_detection(pupil_size_right, 600, timestamps)
+    left_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_left, 600, timestamps)
+    right_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_right, 600, timestamps)
 
     # Identify missing data indices for both pupil size columns
     left_missing_data = missing_data_index(pupil_size_left, 600, timestamps)
@@ -212,6 +53,10 @@ def process_individual_csv(csv_file, folder):
     # Calculate the average blink rate considering missing data periods
     right_average_blink_rate = calculate_blink_rate(right_blinks, right_missing_data_correct, 600)
 
+    # Calculate the concatenated onsets and offsets based on how closely the onsets anf offsets of the left and right
+    # pupil match
+    concat_onsets, concat_offsets = identify_concat_blinks(left_blinks, right_blinks)
+
     return {
         'subject': subject_id,
         'day': day_number,
@@ -219,7 +64,9 @@ def process_individual_csv(csv_file, folder):
         'left_blink_offsets': left_blinks["blink_offset"].values,
         'right_blink_onsets': right_blinks["blink_onset"].values,
         'right_blink_offsets': right_blinks["blink_offset"].values,
-        "left_average_blink_rate": left_average_blink_rate,
+        'concatenated_onsets': concat_onsets,
+        'concatenated_offsets': concat_offsets,
+        'left_average_blink_rate': left_average_blink_rate,
         'right_average_blink_rate': right_average_blink_rate,
         'left_missing_data_percentage': np.mean(left_missing_data),
         'right_missing_data_percentage': np.mean(right_missing_data)
@@ -254,6 +101,48 @@ def calculate_blink_rate(blinks, missing_values, sampling_freq):
     average_blink_rate = total_blinks / duration_in_minutes
 
     return average_blink_rate
+
+
+def identify_concat_blinks(left_blinks, right_blinks, tolerance=.1):
+    """
+        Identify and concatenate blinks from left and right eye blink data.
+
+        This function takes blink onset and offset times for left and right eye blinks,
+        compares them within a given tolerance, and identifies concurrent blinks.
+        The identified concurrent blinks are then concatenated into single onsets
+        and offsets using the maximum of the overlapping values.
+
+        Parameters:
+        left_blinks (DataFrame): A DataFrame containing 'blink_onset' and 'blink_offset' columns for left eye blinks.
+        right_blinks (DataFrame): A DataFrame containing 'blink_onset' and 'blink_offset' columns for right eye blinks.
+        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
+                           to consider them as a single blink event. Default is 0.1 seconds.
+
+        Returns:
+        concat_onsets (list): A list of concatenated blink onset times.
+        concat_offsets (list): A list of concatenated blink offset times.
+    """
+    left_onsets = np.array(left_blinks["blink_onset"])
+    left_offsets = np.array(left_blinks["blink_offset"])
+    right_onsets = np.array(right_blinks["blink_onset"])
+    right_offsets = np.array(left_blinks["blink_offset"])
+    concat_onsets = []
+    concat_offsets = []
+
+    i, j = 0, 0
+    while i < len(left_onsets) and j < len(right_onsets):
+        if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
+            concat_onsets.append(max(left_onsets[i], right_onsets[j]))
+            if i < len(left_offsets) and j < len(right_offsets):
+                concat_offsets.append(max(left_offsets[i], right_offsets[j]))
+            i += 1
+            j += 1
+        elif left_onsets[i] < right_onsets[j]:
+            i += 1
+        else:
+            j += 1
+
+    return concat_onsets, concat_offsets
 
 
 def process_csv_files(folder):
@@ -301,7 +190,7 @@ def missing_data_index(pupil_size, sampling_freq, timestamps):
     print(np.mean(missing_pupil_size))
 
     # Detect blinks
-    blinks = pupil_separated_blink_detection(pupil_size, sampling_freq, timestamps)
+    blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size, sampling_freq, timestamps)
     blink_onsets = blinks['blink_onset']
     blink_offsets = blinks['blink_offset']
 
@@ -381,8 +270,8 @@ def plot_pupil_size_v_time(csv_file):
     pupil_size_right = dataframe['pupil_size_right']
 
     # Detect blinks using a separate function (not included here)
-    left_blinks = pupil_separated_blink_detection(pupil_size_left, 600, timestamps)
-    right_blinks = pupil_separated_blink_detection(pupil_size_right, 600, timestamps)
+    left_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_left, 600, timestamps)
+    right_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_right, 600, timestamps)
 
     # Plot pupil size vs time for left and right eye
     plt.plot(timestamps, pupil_size_left, label='Left Size')
@@ -413,4 +302,4 @@ output_folder = 'output'
 # Create a new CSV file with all participants, days, and blink rates
 process_csv_files("output")
 
-plot_pupil_size_v_time("output/sub-027_rseeg_block_1_d02_20230824_eyetracker.csv")
+plot_pupil_size_v_time("output/sub-025_rseeg_block_1_d03_20230720_eyetracker.csv")
