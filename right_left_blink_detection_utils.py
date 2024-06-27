@@ -78,8 +78,12 @@ def process_individual_csv(csv_file, folder):
         'right_average_blink_duration': right_average_blink_duration,
         'left_blink_duration_variability': left_blink_duration_variability,
         'right_blink_duration_variability': right_blink_duration_variability,
-        'left_missing_data_percentage': np.mean(left_missing_data),
-        'right_missing_data_percentage': np.mean(right_missing_data)
+        'left_missing_data_percentage': np.mean(np.isnan(pupil_size_left)),
+        'right_missing_data_percentage': np.mean(np.isnan(pupil_size_right)),
+        'left_missing_data_percentage_excluding_blinks': np.mean(left_missing_data),
+        'right_missing_data_percentage_excluding_blinks': np.mean(right_missing_data),
+        'left_missing_data_percentage_excluding_blinks_and_min_time_range': np.mean(left_missing_data_correct),
+        'right_missing_data_percentage_excluding_blinks_and_min_time_range': np.mean(right_missing_data_correct)
     }
 
 

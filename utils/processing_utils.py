@@ -38,10 +38,10 @@ def process_individual_csv(csv_file, folder):
     right_pupil_missing_data = np.mean(np.isnan(pupil_size_right))
 
     # Identify missing data indices for both pupil size columns
-    missing_data = missing_data_index(pupil_size_left, pupil_size_right, 600, timestamps)
+    missing_data = missing_data_excluding_blinks(pupil_size_left, pupil_size_right, 600, timestamps)
 
     # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
-    missing_data_correct = missing_data_time_range(missing_data, 600)
+    missing_data_correct = missing_data_excluding_time_range(missing_data, 600)
 
     # Calculate the average blink rate considering missing data periods
     average_blink_rate = feature_extraction_utils.calculate_blink_rate(blinks, missing_data_correct, 600)
@@ -79,7 +79,7 @@ def process_csv_files(folder):
     results_df.to_csv(os.path.join(folder, 'features/compiled_blink_rates.csv'), index=False)
 
 
-def missing_data_index(pupil_size_left, pupil_size_right, sampling_freq, timestamps):
+def missing_data_excluding_blinks(pupil_size_left, pupil_size_right, sampling_freq, timestamps):
     """
     Identify indices of missing data that are not caused by blinks.
 
@@ -120,7 +120,7 @@ def missing_data_index(pupil_size_left, pupil_size_right, sampling_freq, timesta
     return missing_data
 
 
-def missing_data_time_range(bool_array_of_missing_values, sampling_freq):
+def missing_data_excluding_time_range(bool_array_of_missing_values, sampling_freq):
     """
     This function iterates through a boolean array representing missing data
     and identifies consecutive groups of True values. It then filters out groups
