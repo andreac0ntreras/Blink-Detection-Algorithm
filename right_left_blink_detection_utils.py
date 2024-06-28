@@ -147,7 +147,7 @@ def calculate_blink_duration_variability(blinks):
     return blink_duration_variability
 
 
-def identify_concat_blinks(left_blinks, right_blinks, tolerance=.1):
+def identify_concat_blinks(left_blinks, right_blinks, tolerance=.15):
     """
         Identify and concatenate blinks from left and right eye blink data.
 
@@ -169,7 +169,7 @@ def identify_concat_blinks(left_blinks, right_blinks, tolerance=.1):
     left_onsets = np.array(left_blinks["blink_onset"])
     left_offsets = np.array(left_blinks["blink_offset"])
     right_onsets = np.array(right_blinks["blink_onset"])
-    right_offsets = np.array(left_blinks["blink_offset"])
+    right_offsets = np.array(right_blinks["blink_offset"])
     concat_onsets = []
     concat_offsets = []
 
