@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
-import blink_detection_utils
+from utils import blink_detection_utils
 
 
 def plot_pupil_size_v_time(csv_file):
@@ -23,7 +23,7 @@ def plot_pupil_size_v_time(csv_file):
     pupil_size_right = dataframe['pupil_size_right']
 
     # Detect blinks using a separate function (not included here)
-    blinks = blink_detection_utils.based_noise_blinks_detection(pupil_size_left, pupil_size_right, 600, timestamps)
+    blinks = blink_detection_utils.both_pupils_blink_detection(pupil_size_left, pupil_size_right, 600, timestamps)
 
     # Create a figure for plotting
     plt.figure()
@@ -40,14 +40,14 @@ def plot_pupil_size_v_time(csv_file):
 
     # Label axes and set title
     plt.xlabel('Time (s)')
-    plt.ylabel('Size')
+    plt.ylabel('Size (AU)')
     subject_id = csv_file.split('_')[0].split("/")[-1]
     day_number = csv_file.split('_')[4].split('.')[0]
     plt.title(f'{subject_id}_{day_number} Pupil Size')
     plt.legend()
 
     # Create output directory if it doesn't exist
-    output_dir = 'output/plots'
+    output_dir = '../output/plots'
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate filename and save the plot
