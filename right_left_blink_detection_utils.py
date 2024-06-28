@@ -63,6 +63,11 @@ def process_individual_csv(csv_file, folder):
     # pupil match
     concat_onsets, concat_offsets = identify_concat_blinks(left_blinks, right_blinks)
 
+    concat_missing_data = missing_data_without_concat_blinks(pupil_size_left, pupil_size_right, concat_onsets,
+                                                             concat_offsets, timestamps)
+
+    average_blink_rate = calculate_concat_blink_rate(concat_onsets, concat_missing_data, 600)
+
     return {
         'subject': subject_id,
         'day': day_number,
@@ -74,6 +79,7 @@ def process_individual_csv(csv_file, folder):
         'concatenated_offsets': concat_offsets,
         'left_average_blink_rate': left_average_blink_rate,
         'right_average_blink_rate': right_average_blink_rate,
+        'concat_average_blink_rate': average_blink_rate,
         'left_average_blink_duration': left_average_blink_duration,
         'right_average_blink_duration': right_average_blink_duration,
         'left_blink_duration_variability': left_blink_duration_variability,
@@ -101,6 +107,36 @@ def calculate_blink_rate(blinks, missing_values, sampling_freq):
     """
     # Sets total_blinks equal to the number of blink onsets
     total_blinks = len(blinks["blink_onset"])
+
+    # Calculate the number of non-missing values
+    num_of_non_missing_values = np.sum(~missing_values)
+
+    # Calculate the duration in seconds
+    duration_in_seconds = num_of_non_missing_values / sampling_freq
+
+    # Convert the adjusted duration to minutes
+    duration_in_minutes = duration_in_seconds / 60
+
+    # Calculate the average blink rate
+    average_blink_rate = total_blinks / duration_in_minutes
+
+    return average_blink_rate
+
+
+def calculate_concat_blink_rate(concat_onsets, missing_values, sampling_freq):
+    """
+    Calculate the average blink rate.
+
+    Parameters:
+    concat_onsets (list): List containing concatenated onsets.
+    missing_values (np.array): Boolean array indicating missing values (True if missing, False otherwise).
+    sampling_freq (float): The sampling frequency (samples per second).
+
+    Returns:
+    float: Average blink rate (blinks per minute).
+    """
+    # Sets total_blinks equal to the number of blink onsets
+    total_blinks = len(concat_onsets)
 
     # Calculate the number of non-missing values
     num_of_non_missing_values = np.sum(~missing_values)
@@ -293,6 +329,37 @@ def missing_data_time_range(bool_array_of_missing_values, sampling_freq):
             i += 1
 
     return filtered_missing_values
+
+
+def missing_data_without_concat_blinks(pupil_size_left, pupil_size_right, concat_onsets, concat_offsets, timestamps):
+    """
+    Identify samples with missing data, excluding periods marked as blinks.
+
+    Parameters:
+    pupil_size_left (np.ndarray): Array of pupil sizes for the left eye, with NaN indicating missing values.
+    pupil_size_right (np.ndarray): Array of pupil sizes for the right eye, with NaN indicating missing values.
+    concat_onsets (np.ndarray): Array of blink onset timestamps.
+    concat_offsets (np.ndarray): Array of blink offset timestamps.
+    timestamps (np.ndarray): Array of timestamps for the samples.
+
+    Returns:
+    np.ndarray: Boolean array where True indicates missing data not within blink periods.
+    """
+    # Initialize an array to hold missing data flags
+    both_missing_pupil_size = np.isnan(pupil_size_left) & np.isnan(pupil_size_right)
+    missing_data = np.zeros_like(both_missing_pupil_size, dtype=bool)
+
+    # Iterate over each sample to check if it's missing and not within a blink period
+    for i, is_nan in enumerate(both_missing_pupil_size):
+        if is_nan:
+            timestamp = timestamps[i]
+            # Check if the timestamp falls within any blink period
+            in_blink = any(blink_onset <= timestamp <= blink_offset for blink_onset, blink_offset in
+                           zip(concat_onsets, concat_offsets))
+            if not in_blink:
+                missing_data[i] = True
+
+    return missing_data
 
 
 def plot_pupil_size_v_time(csv_file):
