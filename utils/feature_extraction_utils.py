@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def calculate_blink_rate(blinks, missing_values, sampling_freq):
@@ -99,7 +100,7 @@ def calculate_inter_blink_interval(blink_onsets):
     blink_onsets (list): List or array of blink onset times.
 
     Returns:
-    list: List of inter-blink intervals in seconds.
+    ibi (list): List of inter-blink intervals in seconds.
     """
     # Ensure blink onsets are sorted
     blink_onsets = sorted(blink_onsets)
@@ -108,6 +109,49 @@ def calculate_inter_blink_interval(blink_onsets):
     ibi = np.diff(blink_onsets)
 
     return ibi
+
+
+def mean_inter_blink_interval(ibi):
+    """
+    Calculate the mean inter-blink interval (IBI) excluding the blink periods.
+
+    Parameters:
+    ibi (list): List of inter-blink intervals in seconds.
+
+    Returns:
+    mean_ibi (float): The mean inter-blink interval.
+    """
+    mean_ibi = np.mean(ibi)
+    return mean_ibi
+
+
+def average_pupil_size_without_blinks(pupil_size, blink_onset, blink_offset):
+    """
+    Calculate the average pupil size excluding the blink periods.
+
+    Parameters:
+    pupil_size (pd.Series): Series containing the pupil sizes of one eye.
+    blink_onset (pd.Series): Series containing the onset times of blinks.
+    blink_offset (pd.Series): Series containing the offset times of blinks.
+
+    Returns:
+    float: The average pupil size excluding the blink periods.
+    """
+    # Create a boolean Series to mark valid indices
+    valid_indices = pd.Series(True, index=pupil_size.index)
+
+    # Convert blink_onset and blink_offset to integers (assuming they are timestamps)
+    blink_onset_indices = blink_onset.round().astype(int)
+    blink_offset_indices = blink_offset.round().astype(int)
+
+    # Mark the blink periods as invalid
+    for onset, offset in zip(blink_onset_indices, blink_offset_indices):
+        valid_indices.iloc[onset:offset] = False
+
+    # Calculate the average pupil size using only the valid data points
+    avg_pupil_size = pupil_size[valid_indices].mean()
+
+    return avg_pupil_size
 
 
 def missing_data_excluding_blinks_both_pupils(pupil_size_left, pupil_size_right, onsets, offsets, timestamps):
