@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-from utils import blink_detection_utils
+from utils import blink_detection_utils, feature_extraction_utils
+from statsmodels.stats.anova import AnovaRM
+import statsmodels.api as sm
+import seaborn as sns
 
 
 def process_individual_csv(csv_file, folder):
@@ -36,37 +39,53 @@ def process_individual_csv(csv_file, folder):
     right_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_right, 600, timestamps)
 
     # Identify missing data indices for both pupil size columns
-    left_missing_data = missing_data_index(pupil_size_left, 600, timestamps)
+    left_missing_data = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(pupil_size_left,
+                                                                                            left_blinks["blink_onset"],
+                                                                                            left_blinks["blink_offset"],
+                                                                                            timestamps)
 
     # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
-    left_missing_data_correct = missing_data_time_range(left_missing_data, 600)
+    left_missing_data_correct = feature_extraction_utils.missing_data_excluding_time_range(left_missing_data, 600)
 
     # Calculate the average blink rate considering missing data periods
-    left_average_blink_rate = calculate_blink_rate(left_blinks, left_missing_data_correct, 600)
+    left_average_blink_rate = feature_extraction_utils.calculate_blink_rate(left_blinks, left_missing_data_correct, 600)
 
     # Identify missing data indices for both pupil size columns
-    right_missing_data = missing_data_index(pupil_size_right, 600, timestamps)
+    right_missing_data = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(pupil_size_right,
+                                                                                             right_blinks[
+                                                                                                 "blink_onset"],
+                                                                                             right_blinks[
+                                                                                                 "blink_offset"],
+                                                                                             timestamps)
 
     # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
-    right_missing_data_correct = missing_data_time_range(right_missing_data, 600)
+    right_missing_data_correct = feature_extraction_utils.missing_data_excluding_time_range(right_missing_data, 600)
 
     # Calculate the average blink rate considering missing data periods
-    right_average_blink_rate = calculate_blink_rate(right_blinks, right_missing_data_correct, 600)
+    right_average_blink_rate = feature_extraction_utils.calculate_blink_rate(right_blinks, right_missing_data_correct,
+                                                                             600)
 
     # Calculate average blink duration and blink duration variability
-    left_average_blink_duration = calculate_average_blink_duration(left_blinks)
-    right_average_blink_duration = calculate_average_blink_duration(right_blinks)
-    left_blink_duration_variability = calculate_blink_duration_variability(left_blinks)
-    right_blink_duration_variability = calculate_blink_duration_variability(right_blinks)
+    left_average_blink_duration = feature_extraction_utils.calculate_average_blink_duration(left_blinks)
+    right_average_blink_duration = feature_extraction_utils.calculate_average_blink_duration(right_blinks)
+    left_blink_duration_variability = feature_extraction_utils.calculate_blink_duration_variability(left_blinks)
+    right_blink_duration_variability = feature_extraction_utils.calculate_blink_duration_variability(right_blinks)
 
     # Calculate the concatenated onsets and offsets based on how closely the onsets anf offsets of the left and right
     # pupil match
-    concat_onsets, concat_offsets = identify_concat_blinks(left_blinks, right_blinks)
+    concat_onsets, concat_offsets = blink_detection_utils.identify_concat_blinks(left_blinks, right_blinks)
 
-    concat_missing_data = missing_data_without_concat_blinks(pupil_size_left, pupil_size_right, concat_onsets,
-                                                             concat_offsets, timestamps)
+    concat_missing_data = feature_extraction_utils.missing_data_excluding_blinks_both_pupils(pupil_size_left,
+                                                                                             pupil_size_right,
+                                                                                             concat_onsets,
+                                                                                             concat_offsets, timestamps)
 
-    average_blink_rate = calculate_concat_blink_rate(concat_onsets, concat_missing_data, 600)
+    average_blink_rate = feature_extraction_utils.calculate_concat_blink_rate(concat_onsets, concat_missing_data, 600)
+
+    # Calculate inter-blink intervals
+    left_ibi = feature_extraction_utils.calculate_inter_blink_interval(left_blinks["blink_onset"].values)
+    right_ibi = feature_extraction_utils.calculate_inter_blink_interval(right_blinks["blink_onset"].values)
+    concat_ibi = feature_extraction_utils.calculate_inter_blink_interval(concat_onsets)
 
     return {
         'subject': subject_id,
@@ -84,6 +103,9 @@ def process_individual_csv(csv_file, folder):
         'right_average_blink_duration': right_average_blink_duration,
         'left_blink_duration_variability': left_blink_duration_variability,
         'right_blink_duration_variability': right_blink_duration_variability,
+        'left_inter_blink_interval': left_ibi,
+        'right_inter_blink_interval': right_ibi,
+        'concat_inter_blink_interval': concat_ibi,
         'left_missing_data_percentage': np.mean(np.isnan(pupil_size_left)),
         'right_missing_data_percentage': np.mean(np.isnan(pupil_size_right)),
         'left_missing_data_percentage_excluding_blinks': np.mean(left_missing_data),
@@ -93,144 +115,15 @@ def process_individual_csv(csv_file, folder):
     }
 
 
-def calculate_blink_rate(blinks, missing_values, sampling_freq):
-    """
-    Calculate the average blink rate.
-
-    Parameters:
-    blinks (dict): Dictionary containing blink onset and offset timestamps.
-    missing_values (np.array): Boolean array indicating missing values (True if missing, False otherwise).
-    sampling_freq (float): The sampling frequency (samples per second).
-
-    Returns:
-    float: Average blink rate (blinks per minute).
-    """
-    # Sets total_blinks equal to the number of blink onsets
-    total_blinks = len(blinks["blink_onset"])
-
-    # Calculate the number of non-missing values
-    num_of_non_missing_values = np.sum(~missing_values)
-
-    # Calculate the duration in seconds
-    duration_in_seconds = num_of_non_missing_values / sampling_freq
-
-    # Convert the adjusted duration to minutes
-    duration_in_minutes = duration_in_seconds / 60
-
-    # Calculate the average blink rate
-    average_blink_rate = total_blinks / duration_in_minutes
-
-    return average_blink_rate
-
-
-def calculate_concat_blink_rate(concat_onsets, missing_values, sampling_freq):
-    """
-    Calculate the average blink rate.
-
-    Parameters:
-    concat_onsets (list): List containing concatenated onsets.
-    missing_values (np.array): Boolean array indicating missing values (True if missing, False otherwise).
-    sampling_freq (float): The sampling frequency (samples per second).
-
-    Returns:
-    float: Average blink rate (blinks per minute).
-    """
-    # Sets total_blinks equal to the number of blink onsets
-    total_blinks = len(concat_onsets)
-
-    # Calculate the number of non-missing values
-    num_of_non_missing_values = np.sum(~missing_values)
-
-    # Calculate the duration in seconds
-    duration_in_seconds = num_of_non_missing_values / sampling_freq
-
-    # Convert the adjusted duration to minutes
-    duration_in_minutes = duration_in_seconds / 60
-
-    # Calculate the average blink rate
-    average_blink_rate = total_blinks / duration_in_minutes
-
-    return average_blink_rate
-
-
-def calculate_average_blink_duration(blinks):
-    """
-    Calculate the average blink duration from blink onset and offset times.
-
-    Parameters:
-    blinks (DataFrame): DataFrame containing 'blink_onset' and 'blink_offset' columns.
-
-    Returns:
-    float: Average blink duration in seconds.
-    """
-    blink_durations = np.array(blinks['blink_offset']) - np.array(blinks['blink_onset'])
-    average_blink_duration = np.mean(blink_durations)
-    return average_blink_duration
-
-
-def calculate_blink_duration_variability(blinks):
-    """
-    Calculate the blink duration variability (standard deviation of blink durations).
-
-    Parameters:
-    blinks (DataFrame): DataFrame containing 'blink_onset' and 'blink_offset' columns.
-
-    Returns:
-    float: Standard deviation of blink durations in seconds.
-    """
-    blink_durations = np.array(blinks['blink_offset']) - np.array(blinks['blink_onset'])
-    blink_duration_variability = np.std(blink_durations)
-    return blink_duration_variability
-
-
-def identify_concat_blinks(left_blinks, right_blinks, tolerance=.15):
-    """
-        Identify and concatenate blinks from left and right eye blink data.
-
-        This function takes blink onset and offset times for left and right eye blinks,
-        compares them within a given tolerance, and identifies concurrent blinks.
-        The identified concurrent blinks are then concatenated into single onsets
-        and offsets using the maximum of the overlapping values.
-
-        Parameters:
-        left_blinks (DataFrame): A DataFrame containing 'blink_onset' and 'blink_offset' columns for left eye blinks.
-        right_blinks (DataFrame): A DataFrame containing 'blink_onset' and 'blink_offset' columns for right eye blinks.
-        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
-                           to consider them as a single blink event. Default is 0.1 seconds.
-
-        Returns:
-        concat_onsets (list): A list of concatenated blink onset times.
-        concat_offsets (list): A list of concatenated blink offset times.
-    """
-    left_onsets = np.array(left_blinks["blink_onset"])
-    left_offsets = np.array(left_blinks["blink_offset"])
-    right_onsets = np.array(right_blinks["blink_onset"])
-    right_offsets = np.array(right_blinks["blink_offset"])
-    concat_onsets = []
-    concat_offsets = []
-
-    i, j = 0, 0
-    while i < len(left_onsets) and j < len(right_onsets):
-        if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
-            concat_onsets.append(np.mean([left_onsets[i], right_onsets[j]]))
-            if i < len(left_offsets) and j < len(right_offsets):
-                concat_offsets.append(np.mean([left_offsets[i], right_offsets[j]]))
-            i += 1
-            j += 1
-        elif left_onsets[i] < right_onsets[j]:
-            i += 1
-        else:
-            j += 1
-
-    return concat_onsets, concat_offsets
-
-
 def process_csv_files(folder):
     """
     Process all CSV files in the specified folder and save blink rate results to a CSV file.
 
     Parameters:
     folder (str): Path to the folder containing CSV files.
+
+    Returns:
+    results_df (pd.DataFrame): Dataframe containing blink related variables for each subject in the folder
     """
     # Initialize list of results
     results = []
@@ -246,120 +139,7 @@ def process_csv_files(folder):
     # Save the DataFrame to a CSV file
     results_df.to_csv(os.path.join(folder, 'features/compiled_left_right_blink_rates.csv'), index=False)
 
-
-def missing_data_index(pupil_size, sampling_freq, timestamps):
-    """
-    Identify indices of missing data that are not caused by blinks.
-
-    This function considers a sample missing if the pupil size data
-    is NaN (Not a Number). It then uses blink detection results
-    to exclude missing data points occurring during blinks.
-
-    Parameters:
-    pupil_size (np.array): Array containing pupil size data.
-    sampling_freq (int): Sampling frequency of the data in Hz.
-    timestamps (np.array): Array containing timestamps for each data point.
-
-    Returns:
-    np.array: Boolean array indicating missing data indices (True)
-              excluding those caused by blinks (False).
-    """
-
-    # Detect missing data
-    missing_pupil_size = np.isnan(pupil_size)
-    print(np.mean(missing_pupil_size))
-
-    # Detect blinks
-    blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size, sampling_freq, timestamps)
-    blink_onsets = blinks['blink_onset']
-    blink_offsets = blinks['blink_offset']
-
-    # Initialize array and iterate through missing data points
-    missing_data = np.zeros_like(missing_pupil_size, dtype=bool)
-    for i, is_nan in enumerate(missing_pupil_size):
-        if is_nan:
-            timestamp = timestamps[i]
-            in_blink = any(blink_onset <= timestamp <= blink_offset for blink_onset, blink_offset in
-                           zip(blink_onsets, blink_offsets))
-            if not in_blink:
-                missing_data[i] = True
-
-    return missing_data
-
-
-def missing_data_time_range(bool_array_of_missing_values, sampling_freq):
-    """
-    This function iterates through a boolean array representing missing data
-    and identifies consecutive groups of True values. It then filters out groups
-    shorter than a specified duration (considered irrelevant gaps because a blink could
-    not occur during the gap).
-
-    Parameters:
-    bool_array_of_missing_values (np.array): Boolean array where True indicates missing data.
-    sampling_freq (int): Sampling frequency of the data in Hz.
-
-    Returns:
-    np.array: Boolean array with the same shape as the input,
-              where True indicates filtered missing data intervals
-              (excluding short gaps).
-    """
-
-    # Minimum number of samples representing 100ms (considered noise)
-    min_samples_for_100ms = int(sampling_freq * 0.1)  # 100ms = 0.1 seconds
-
-    # Create a copy of the input array for modification
-    filtered_missing_values = np.copy(bool_array_of_missing_values)
-
-    # Iterate through the boolean array to find and filter short missing data groups
-    i = 0
-    while i < len(bool_array_of_missing_values):
-        if bool_array_of_missing_values[i]:
-            # Start of a missing data group
-            start = i
-            while i < len(bool_array_of_missing_values) and bool_array_of_missing_values[i]:
-                i += 1
-            end = i  # end is exclusive
-
-            # Check the duration of the missing data group (in number of samples)
-            num_samples = end - start
-            if num_samples < min_samples_for_100ms:
-                # Set these values to False in the output array (considered noise)
-                filtered_missing_values[start:end] = False
-        else:
-            i += 1
-
-    return filtered_missing_values
-
-
-def missing_data_without_concat_blinks(pupil_size_left, pupil_size_right, concat_onsets, concat_offsets, timestamps):
-    """
-    Identify samples with missing data, excluding periods marked as blinks.
-
-    Parameters:
-    pupil_size_left (np.ndarray): Array of pupil sizes for the left eye, with NaN indicating missing values.
-    pupil_size_right (np.ndarray): Array of pupil sizes for the right eye, with NaN indicating missing values.
-    concat_onsets (np.ndarray): Array of blink onset timestamps.
-    concat_offsets (np.ndarray): Array of blink offset timestamps.
-    timestamps (np.ndarray): Array of timestamps for the samples.
-
-    Returns:
-    np.ndarray: Boolean array where True indicates missing data not within blink periods.
-    """
-    # Initialize an array to hold missing data flags
-    both_missing_pupil_size = np.isnan(pupil_size_left) & np.isnan(pupil_size_right)
-    missing_data = np.zeros_like(both_missing_pupil_size, dtype=bool)
-
-    # Iterate over each sample to check if it's missing and not within a blink period
-    for i, is_nan in enumerate(both_missing_pupil_size):
-        if is_nan:
-            timestamp = timestamps[i]
-            # Check if the timestamp falls within any blink period
-            in_blink = any(blink_onset <= timestamp <= blink_offset for blink_onset, blink_offset in
-                           zip(concat_onsets, concat_offsets))
-            if not in_blink:
-                missing_data[i] = True
-
-    return missing_data
+    return results_df
 
 
 def plot_pupil_size_v_time(csv_file):
@@ -411,6 +191,70 @@ def plot_pupil_size_v_time(csv_file):
 output_folder = 'output'
 
 # Create a new CSV file with all participants, days, and blink rates
-process_csv_files("output")
+compiled_df = process_csv_files("output")
 
-plot_pupil_size_v_time("output/sub-025_rseeg_block_1_d03_20230720_eyetracker.csv")
+# Transform the data to long format if needed
+data_long = compiled_df.pivot(index='subject', columns='day', values='concat_average_blink_rate').reset_index()
+data_long.columns = ['subject', 'day1', 'day2', 'day3']
+
+# Melt the dataframe back to long format for ANOVA
+data_melted = pd.melt(data_long, id_vars=['subject'], value_vars=['day1', 'day2', 'day3'],
+                      var_name='day', value_name='concat_average_blink_rate')
+
+# Fit the ANOVA model
+aovrm = AnovaRM(data_melted, 'concat_average_blink_rate', 'subject', within=['day'])
+res = aovrm.fit()
+print(res)
+
+# Print the summary of the ANOVA
+print(res.summary())
+
+# Line plot
+sns.lineplot(x='day', y='concat_average_blink_rate', data=data_melted, hue='subject', marker='o')
+plt.title('Blink Rate Across Different Days for Each Subject')
+plt.show()
+
+
+# Define a function to perform the linear regression analysis
+def perform_linear_regression(df, dependent_var, independent_var):
+    X = df[independent_var]
+    y = df[dependent_var]
+    X = sm.add_constant(X)  # Adds a constant term to the predictor
+    model = sm.OLS(y, X).fit()
+    return model
+
+
+# Perform the analysis for the left eye
+left_model = perform_linear_regression(
+    compiled_df,
+    'left_average_blink_rate',
+    'left_missing_data_percentage_excluding_blinks_and_min_time_range'
+)
+
+# Perform the analysis for the right eye
+right_model = perform_linear_regression(
+    compiled_df,
+    'right_average_blink_rate',
+    'right_missing_data_percentage_excluding_blinks_and_min_time_range'
+)
+
+# Print the summary of the regression models
+print("Left Eye Model Summary:")
+print(left_model.summary())
+
+print("\nRight Eye Model Summary:")
+print(right_model.summary())
+
+"""
+             Anova
+================================
+    F Value Num DF Den DF Pr > F
+--------------------------------
+day  0.9166 2.0000 8.0000 0.4381
+================================
+
+
+There is no statistically significant difference in the average blink rate across the three days for each subject.
+The p-value of 0.4381 indicates that any observed differences in blink rate are likely due to random variation
+rather than an effect of the day.
+"""

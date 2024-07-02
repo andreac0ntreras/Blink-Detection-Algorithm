@@ -69,9 +69,9 @@ def get_resting_state_timestamps(event_timestamps):
     # Create a dictionary mapping modified event data to their corresponding timestamps
     event_dict = dict(zip(event_data_modified, event_timestamps))
 
-    # Index to extract the timestamps correlating to the second resting state measurement
-    start_time = event_dict[(101.2,)]
-    end_time = event_dict[(102.2,)]
+    # Index to extract the timestamps correlating to the first resting state measurement
+    start_time = event_dict[(101.1,)]
+    end_time = event_dict[(102.1,)]
 
     return start_time, end_time
 

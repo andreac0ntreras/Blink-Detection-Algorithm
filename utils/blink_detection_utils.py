@@ -418,3 +418,45 @@ def single_pupil_blink_detection(pupil_size, sampling_freq, timestamps):
     blinks["blink_offset"] = timestamps[temp[:, 1]]
 
     return blinks
+
+
+def identify_concat_blinks(left_blinks, right_blinks, tolerance=.15):
+    """
+        Identify and concatenate blinks from left and right eye blink data.
+
+        This function takes blink onset and offset times for left and right eye blinks,
+        compares them within a given tolerance, and identifies concurrent blinks.
+        The identified concurrent blinks are then concatenated into single onsets
+        and offsets using the maximum of the overlapping values.
+
+        Parameters:
+        left_blinks (DataFrame): A DataFrame containing 'blink_onset' and 'blink_offset' columns for left eye blinks.
+        right_blinks (DataFrame): A DataFrame containing 'blink_onset' and 'blink_offset' columns for right eye blinks.
+        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
+                           to consider them as a single blink event. Default is 0.1 seconds.
+
+        Returns:
+        concat_onsets (list): A list of concatenated blink onset times.
+        concat_offsets (list): A list of concatenated blink offset times.
+    """
+    left_onsets = np.array(left_blinks["blink_onset"])
+    left_offsets = np.array(left_blinks["blink_offset"])
+    right_onsets = np.array(right_blinks["blink_onset"])
+    right_offsets = np.array(right_blinks["blink_offset"])
+    concat_onsets = []
+    concat_offsets = []
+
+    i, j = 0, 0
+    while i < len(left_onsets) and j < len(right_onsets):
+        if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
+            concat_onsets.append(np.mean([left_onsets[i], right_onsets[j]]))
+            if i < len(left_offsets) and j < len(right_offsets):
+                concat_offsets.append(np.mean([left_offsets[i], right_offsets[j]]))
+            i += 1
+            j += 1
+        elif left_onsets[i] < right_onsets[j]:
+            i += 1
+        else:
+            j += 1
+
+    return concat_onsets, concat_offsets
