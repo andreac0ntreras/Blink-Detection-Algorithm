@@ -67,6 +67,12 @@ times at which the blink detection algorithm recognized a right eye blink offset
 plotting_utils.plot_all_time_v_pupil_size_csv_files_in_directory(output_folder)
 ```
 
+## Remainder of Main
+The remainder of main is experimental code that does an ANOVA test to see if there are consistent differences among blink 
+rates across the three days for the participants, the code also generates graphs like the following:
+![img.png](img.png)
+![img_2.png](img_2.png)
+
 ## Gallery
 Here is an example of a zoomed in plot outcome:
 ![img_1.png](img_1.png)
