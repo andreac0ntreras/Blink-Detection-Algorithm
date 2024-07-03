@@ -32,14 +32,14 @@ contains the eye tracker timeseries data and the eyetracker specs. To extract th
 sourcing_utils.process_xdf_files(folder_path, output_folder)
 ```
 
-This line of code uses functions from the sourcing_utils.py file to convert the raw XDF Files to CSV files 
+This line of code uses functions from the sourcing_utils.py file to convert the raw XDF Files to interim CSV files 
 that contain the relevant variables
 
 ## Blink Detection and Processing
-After generating a CSV file containing the pupil sizes and timestamps for each day and participant, 
+After generating an interim CSV file containing the pupil sizes and timestamps for each day and participant, 
 we can now implement our blink detection algorithm. 
 
-The CSV files containing the pupil sizes and timestamps for each day and subject are located in the _output_ directory
+The interim CSV files containing the pupil sizes and timestamps for each day and subject are located in the _output/interim/_ directory
 
 By running the following line in the main.py file,
 an output CSV file called _compiled_blink_rates.csv_ is generated (in the _output/features_ directory) with the columns 
