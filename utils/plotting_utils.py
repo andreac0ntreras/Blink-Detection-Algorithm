@@ -30,10 +30,10 @@ def plot_pupil_size_v_time_w_concat_onsets_and_offsets(csv_file):
     plt.plot(timestamps, pupil_size_right, label='Right Size', color='darkorange')
 
     # Mark blink onsets and offsets with vertical lines
-    # for blink_onset in blinks["blink_onset"]:
-    #     plt.axvline(blink_onset, color='green')
-    # for blink_offset in blinks["blink_offset"]:
-    #     plt.axvline(blink_offset, color='pink')
+    for blink_onset in blinks["blink_onset"]:
+        plt.axvline(blink_onset, color='green')
+    for blink_offset in blinks["blink_offset"]:
+        plt.axvline(blink_offset, color='pink')
 
     # Label axes and set title
     plt.xlabel('Time (s)')

@@ -42,12 +42,12 @@ we can now implement our blink detection algorithm.
 The interim CSV files containing the pupil sizes and timestamps for each day and subject are located in the _output/interim/_ directory
 
 By running the following line in the main.py file,
-an output CSV file called _compiled_blink_rates.csv_ is generated (in the _output/features_ directory) with the columns 
-subject, day ,blink_rate_mean, and percentage_missing_data, which states the blink rate and percentage of relevant missing data from 
-each participant for each day. 
+an output CSV file called _compiled_feature_extraction.csv_ is generated (in the _output/features_ directory) 
+with columns subject, day, left_blink_onsets, left_blink_offsets, right_blink_onsets, right_blink_offsets, and many
+other features in generated
 
 ```doctest
-processing_utils.process_csv_files(output_folder)
+compiled_df = processing_utils.process_csv_files(output_folder)
 ```
 
 ## Plotting
@@ -59,15 +59,17 @@ sourcing_utils.process_xdf_files(folder_path, output_folder)
 we can create graphs that plot time against pupil size for each day for each participant. 
 Once you run the following line of code in main.py, one plot for each day for each participant will be generated in
 the directory (_output/plots_). In addition to the lines that show the trend of left and right pupil size 
-against time, there will be pink and green lines, where the green represents times at which the blink detection algorithm recognized 
-a blink onset, and pink represents times at which the blink detection algorithm recognized a blink offset.
+against time, there will be horizontal pink, green, red, and yellow lines, where the green represents times at which the blink detection algorithm recognized 
+a left eye blink onset, pink represents times at which the blink detection algorithm recognized a left eye blink offset, yellow represents 
+times at which the blink detection algorithm recognized a right eye blink onset, and red represents 
+times at which the blink detection algorithm recognized a right eye blink offset.
 ```doctest
 plotting_utils.plot_all_time_v_pupil_size_csv_files_in_directory(output_folder)
 ```
 
 ## Gallery
 Here is an example of a zoomed in plot outcome:
-![img.png](img.png)
+![img_1.png](img_1.png)
 
 ## Specifications
 The hardware used during this experiment is the Tobii Spectrum Pro with a sampling frequency of 600Hz.
