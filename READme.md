@@ -15,7 +15,7 @@ git clone https://github.com/andreac0ntreras/Blink-Detection-Algorithm.git
 ### Navigate to the codebase
 Move into the project directory
 ```commandline
-cd ./EOGData
+cd ./Blink-Detection-Algorithm
 ```
 
 ### Install the required packages
@@ -37,7 +37,11 @@ that contain the relevant variables
 
 ## Blink Detection and Processing
 After generating a CSV file containing the pupil sizes and timestamps for each day and participant, 
-we can now implement our blink detection algorithm. By running the following line in the main.py file,
+we can now implement our blink detection algorithm. 
+
+The CSV files containing the pupil sizes and timestamps for each day and subject are located in the _output_ directory
+
+By running the following line in the main.py file,
 an output CSV file called _compiled_blink_rates.csv_ is generated (in the _output/features_ directory) with the columns 
 subject, day ,blink_rate_mean, and percentage_missing_data, which states the blink rate and percentage of relevant missing data from 
 each participant for each day. 
