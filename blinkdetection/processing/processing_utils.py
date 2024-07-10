@@ -1,4 +1,5 @@
-from blinkdetection import feature_extraction_utils, blink_detection_utils
+from blinkdetection.featureextraction import feature_extraction_utils
+from blinkdetection.blinkdetection import blink_detection_utils
 import pandas as pd
 import os
 import numpy as np
