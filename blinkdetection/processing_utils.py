@@ -1,4 +1,4 @@
-from utils import feature_extraction_utils, blink_detection_utils
+from blinkdetection import feature_extraction_utils, blink_detection_utils
 import pandas as pd
 import os
 import numpy as np
@@ -12,8 +12,37 @@ def process_individual_csv(csv_file, folder):
     csv_file (str): Name of the CSV file to process.
     folder (str): Path to the folder containing the CSV file.
 
-    Returns:
-    dict: Dictionary containing subject ID, day number, and average blink rate.
+    dict: A dictionary containing the following keys:
+        - 'subject': Subject ID extracted from the filename.
+        - 'day': Day number extracted from the filename.
+        - 'left_blink_onsets': Array of blink onset times for the left pupil.
+        - 'left_blink_offsets': Array of blink offset times for the left pupil.
+        - 'right_blink_onsets': Array of blink onset times for the right pupil.
+        - 'right_blink_offsets': Array of blink offset times for the right pupil.
+        - 'concatenated_onsets': Array of concatenated blink onset times.
+        - 'concatenated_offsets': Array of concatenated blink offset times.
+        - 'left_average_blink_rate': Average blink rate for the left pupil.
+        - 'right_average_blink_rate': Average blink rate for the right pupil.
+        - 'concat_average_blink_rate': Average blink rate considering concatenated blinks.
+        - 'left_average_blink_duration': Average blink duration for the left pupil.
+        - 'right_average_blink_duration': Average blink duration for the right pupil.
+        - 'left_blink_duration_variability': Variability of blink duration for the left pupil.
+        - 'right_blink_duration_variability': Variability of blink duration for the right pupil.
+        - 'left_average_inter_blink_interval': Average inter-blink interval (IBI) for the left pupil.
+        - 'right_average_inter_blink_interval': Average inter-blink interval (IBI) for the right pupil.
+        - 'concat_average_inter_blink_interval': Average inter-blink interval (IBI) for concatenated blinks.
+        - 'left_average_pupil_size': Average pupil size for the left pupil excluding blink periods.
+        - 'right_average_pupil_size': Average pupil size for the right pupil excluding blink periods.
+        - 'left_missing_data_percentage': Percentage of missing data for the left pupil.
+        - 'right_missing_data_percentage': Percentage of missing data for the right pupil.
+        - 'left_missing_data_percentage_excluding_blinks': Percentage of missing data for the left pupil excluding
+        blink periods.
+        - 'right_missing_data_percentage_excluding_blinks': Percentage of missing data for the right pupil excluding
+        blink periods.
+        - 'left_missing_data_percentage_excluding_blinks_and_min_time_range': Percentage of missing data for the left
+        pupil excluding blink periods and a minimum time range (100ms).
+        - 'right_missing_data_percentage_excluding_blinks_and_min_time_range': Percentage of missing data for the right
+        pupil excluding blink periods and a minimum time range (100ms).
     """
 
     # Extract subject ID and day number from filename components
@@ -128,7 +157,7 @@ def process_individual_csv(csv_file, folder):
 
 def process_csv_files(folder):
     """
-    Process all CSV files in the specified folder and save blink rate results to a CSV file.
+    Process all CSV files in the specified folder and save blink rate and other feature results to a CSV file.
 
     Parameters:
     folder (str): Path to the folder containing CSV files.
