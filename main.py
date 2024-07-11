@@ -5,7 +5,7 @@ folder_path = 'data/raw/XDF Files'
 interim_folder = 'output/interim'
 
 # Process the XDF files
-#bd.process_xdf_files(folder_path, interim_folder)
+# bd.process_xdf_files(folder_path, interim_folder)
 
 # Create a new CSV file with all participants, days, blink features, pupil features, and quality insights
 # CSV is saved to 'output/features/compiled_feature_extraction.csv'

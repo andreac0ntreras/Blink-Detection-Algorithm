@@ -25,11 +25,21 @@ def extract_streams(data):
     data (list): List containing streams from the XDF file.
 
     Returns:
-    tuple: Eyetracker channel data, timestamps, event data, and event timestamps.
+    tuple containing the following:
+     eyetracker_channel_data: streams of both the left and right eye x-position, y-position, and size.
+     eyetracker_timestamps: stream of timestamps that correspond with the eyetracker_channel_data stream.
+     event_data: list of event codes: [101, 102, 201, 202, 101, 102]:
+        101: beginning of first resting state recording
+        102: end of first resting state recording
+        201: beginning of rest period
+        202: end of rest period
+        101: beginning of second resting state recording
+        101: end of second resting state recording
+     event_timestamps: stream of timestamps that correspond with the eyetracker_channel_data stream.
     """
 
-    channel_data = None
-    timestamps = None
+    eyetracker_channel_data = None
+    eyetracker_timestamps = None
     event_data = None
     event_timestamps = None
 
@@ -37,22 +47,23 @@ def extract_streams(data):
     for stream in data:
         # Check if the stream name indicates eyetracker data
         if stream['info']['name'][0] == 'Tobii':
-            channel_data = stream['time_series']
-            timestamps = stream['time_stamps']
+            eyetracker_channel_data = stream['time_series']
+            eyetracker_timestamps = stream['time_stamps']
         # Check if the stream name indicates event data
         elif stream['info']['name'][0] == 'OWDM_Task_Events':
             event_data = stream['time_series']
             event_timestamps = stream['time_stamps']
 
-    return channel_data, timestamps, event_data, event_timestamps
+    return eyetracker_channel_data, eyetracker_timestamps, event_data, event_timestamps
 
 
-def get_resting_state_timestamps(event_timestamps):
+def get_resting_state_timestamps(event_timestamps, rs_recording=1):
     """
-    Get start and end timestamps for the second resting state.
+    Get start and end timestamps for a resting state.
 
     Parameters:
     event_timestamps (list): List of event timestamps.
+    rs_recording (int 1 or 2): Which resting state recording are you looking to pull from? (default 1)
 
     Returns:
     tuple: Start and end timestamps for the second resting state.
@@ -69,9 +80,18 @@ def get_resting_state_timestamps(event_timestamps):
     # Create a dictionary mapping modified event data to their corresponding timestamps
     event_dict = dict(zip(event_data_modified, event_timestamps))
 
+    # Initialize output
+    start_time = 0.0
+    end_time = 0.0
+
     # Index to extract the timestamps correlating to the first resting state measurement
-    start_time = event_dict[(101.1,)]
-    end_time = event_dict[(102.1,)]
+    if rs_recording == 1:
+        start_time = event_dict[(101.1,)]
+        end_time = event_dict[(102.1,)]
+
+    if rs_recording == 2:
+        start_time = event_dict[(101.2,)]
+        end_time = event_dict[(102.2,)]
 
     return start_time, end_time
 
