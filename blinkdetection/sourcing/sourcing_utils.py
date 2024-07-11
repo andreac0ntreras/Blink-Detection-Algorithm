@@ -143,6 +143,7 @@ def save_to_csv(timestamps, pupil_size_left, pupil_size_right, output_csv):
     df.to_csv(output_csv, index=False)
 
 
+# COMBINATION OF PAST FUNCTIONS ===========================================================
 def process_xdf_files(folder_path, output_folder):
     """
     Process all XDF files in the specified folder and save the filtered data to CSV files.

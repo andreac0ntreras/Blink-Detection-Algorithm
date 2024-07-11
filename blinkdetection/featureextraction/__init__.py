@@ -1,6 +1,5 @@
 from .feature_extraction_utils import (
     calculate_blink_rate,
-    calculate_concat_blink_rate,
     calculate_average_blink_duration,
     calculate_blink_duration_variability,
     calculate_inter_blink_interval,
@@ -13,7 +12,6 @@ from .feature_extraction_utils import (
 
 __all__ = [
     'calculate_blink_rate',
-    'calculate_concat_blink_rate',
     'calculate_average_blink_duration',
     'calculate_blink_duration_variability',
     'calculate_inter_blink_interval',

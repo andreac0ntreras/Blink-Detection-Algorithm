@@ -73,10 +73,7 @@ def process_individual_csv(csv_file, folder):
 
     # Identify missing data indices for both pupil size columns
     left_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(
-        pupil_size_left,
-        left_blinks["blink_onset"],
-        left_blinks["blink_offset"],
-        timestamps)
+        pupil_size_left, left_blinks, timestamps)
 
     # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
     left_missing_data_excluding_blinks_and_time_window = feature_extraction_utils.missing_data_excluding_time_range(
@@ -88,7 +85,7 @@ def process_individual_csv(csv_file, folder):
 
     # Identify missing data indices for both pupil size columns
     right_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(
-        pupil_size_right, right_blinks["blink_onset"], right_blinks["blink_offset"], timestamps)
+        pupil_size_right, right_blinks, timestamps)
 
     # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
     right_missing_data_excluding_blinks_and_time_window = feature_extraction_utils.missing_data_excluding_time_range(
@@ -99,10 +96,10 @@ def process_individual_csv(csv_file, folder):
         right_blinks, right_missing_data_excluding_blinks_and_time_window, 600)
 
     concat_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_both_pupils(
-        pupil_size_left, pupil_size_right, concat_onsets, concat_offsets, timestamps)
+        pupil_size_left, pupil_size_right, blinks, timestamps)
 
-    average_blink_rate = feature_extraction_utils.calculate_concat_blink_rate(concat_onsets,
-                                                                              concat_missing_data_excluding_blinks, 600)
+    average_blink_rate = feature_extraction_utils.calculate_blink_rate(blinks,
+                                                                       concat_missing_data_excluding_blinks, 600)
 
     # Calculate average blink duration and blink duration variability
     left_average_blink_duration = feature_extraction_utils.calculate_average_blink_duration(left_blinks)
@@ -111,21 +108,19 @@ def process_individual_csv(csv_file, folder):
     right_blink_duration_variability = feature_extraction_utils.calculate_blink_duration_variability(right_blinks)
 
     # Calculate inter-blink intervals
-    left_ibi = feature_extraction_utils.calculate_inter_blink_interval(left_blinks["blink_onset"].values)
-    right_ibi = feature_extraction_utils.calculate_inter_blink_interval(right_blinks["blink_onset"].values)
-    concat_ibi = feature_extraction_utils.calculate_inter_blink_interval(concat_onsets)
+    left_ibi = feature_extraction_utils.calculate_inter_blink_interval(left_blinks)
+    right_ibi = feature_extraction_utils.calculate_inter_blink_interval(right_blinks)
+    concat_ibi = feature_extraction_utils.calculate_inter_blink_interval(blinks)
 
     left_avg_ibi = feature_extraction_utils.mean_inter_blink_interval(left_ibi)
     right_avg_ibi = feature_extraction_utils.mean_inter_blink_interval(right_ibi)
     concat_avg_ibi = feature_extraction_utils.mean_inter_blink_interval(concat_ibi)
 
     # Calculate average pupil size
-    left_avg_pupil_size = feature_extraction_utils.average_pupil_size_without_blinks(pupil_size_left,
-                                                                                     left_blinks["blink_onset"],
-                                                                                     left_blinks["blink_offset"])
-    right_avg_pupil_size = feature_extraction_utils.average_pupil_size_without_blinks(pupil_size_right,
-                                                                                      right_blinks["blink_onset"],
-                                                                                      right_blinks["blink_offset"])
+    left_avg_pupil_size = feature_extraction_utils.average_pupil_size_without_blinks(pupil_size_left, timestamps,
+                                                                                     left_blinks)
+    right_avg_pupil_size = feature_extraction_utils.average_pupil_size_without_blinks(pupil_size_right, timestamps,
+                                                                                      right_blinks)
 
     return {
         'subject': subject_id,

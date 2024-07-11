@@ -32,42 +32,12 @@ def calculate_blink_rate(blinks, missing_values, sampling_freq):
     return average_blink_rate
 
 
-def calculate_concat_blink_rate(concat_onsets, missing_values, sampling_freq):
-    """
-    Calculate the average blink rate. Useful for when you only have a list of onsets/offsets
-
-    Parameters:
-    concat_onsets (list): List containing concatenated blink onsets (or offsets).
-    missing_values (np.array): Boolean array indicating missing values (True if missing, False otherwise).
-    sampling_freq (float): The sampling frequency (samples per second).
-
-    Returns:
-    float: Average blink rate (blinks per minute).
-    """
-    # Sets total_blinks equal to the number of blink onsets
-    total_blinks = len(concat_onsets)
-
-    # Calculate the number of non-missing values
-    num_of_non_missing_values = np.sum(~missing_values)
-
-    # Calculate the duration in seconds
-    duration_in_seconds = num_of_non_missing_values / sampling_freq
-
-    # Convert the adjusted duration to minutes
-    duration_in_minutes = duration_in_seconds / 60
-
-    # Calculate the average blink rate
-    average_blink_rate = total_blinks / duration_in_minutes
-
-    return average_blink_rate
-
-
 def calculate_average_blink_duration(blinks):
     """
     Calculate the average blink duration from blink onset and offset times.
 
     Parameters:
-    blinks (DataFrame): DataFrame containing 'blink_onset' and 'blink_offset' columns.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
 
     Returns:
     float: Average blink duration in seconds.
@@ -82,7 +52,7 @@ def calculate_blink_duration_variability(blinks):
     Calculate the blink duration variability (standard deviation of blink durations).
 
     Parameters:
-    blinks (DataFrame): DataFrame containing 'blink_onset' and 'blink_offset' columns.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
 
     Returns:
     float: Standard deviation of blink durations in seconds.
@@ -92,18 +62,18 @@ def calculate_blink_duration_variability(blinks):
     return blink_duration_variability
 
 
-def calculate_inter_blink_interval(blink_onsets):
+def calculate_inter_blink_interval(blinks):
     """
     Calculate the inter-blink interval (IBI) from blink onset times.
 
     Parameters:
-    blink_onsets (list): List or array of blink onset times.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
 
     Returns:
     ibi (list): List of inter-blink intervals in seconds.
     """
     # Ensure blink onsets are sorted
-    blink_onsets = sorted(blink_onsets)
+    blink_onsets = sorted(blinks["blink_onset"].values)
 
     # Calculate the intervals between consecutive blinks
     ibi = np.diff(blink_onsets)
@@ -117,6 +87,7 @@ def mean_inter_blink_interval(ibi):
 
     Parameters:
     ibi (list): List of inter-blink intervals in seconds.
+    (This is generated using the calculate_inter_blink_interval function.)
 
     Returns:
     mean_ibi (float): The mean inter-blink interval.
@@ -125,36 +96,35 @@ def mean_inter_blink_interval(ibi):
     return mean_ibi
 
 
-def average_pupil_size_without_blinks(pupil_size, blink_onset, blink_offset):
+def average_pupil_size_without_blinks(pupil_size, timestamps, blinks):
     """
     Calculate the average pupil size excluding the blink periods.
 
     Parameters:
-    pupil_size (pd.Series): Series containing the pupil sizes of one eye.
-    blink_onset (pd.Series): Series containing the onset times of blinks.
-    blink_offset (pd.Series): Series containing the offset times of blinks.
+    pupil_size (list): List containing a timeseries of the pupil sizes of one eye.
+    timestamps (list): List of timestamps corresponding to the list of pupil sizes.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
 
     Returns:
     float: The average pupil size excluding the blink periods.
     """
-    # Create a boolean Series to mark valid indices
-    valid_indices = pd.Series(True, index=pupil_size.index)
+    total_size = 0.0
+    valid_count = 0
 
-    # Convert blink_onset and blink_offset to integers (assuming they are timestamps)
-    blink_onset_indices = blink_onset.round().astype(int)
-    blink_offset_indices = blink_offset.round().astype(int)
+    for size, timestamp in zip(pupil_size, timestamps):
+        in_blink_period = False
+        for blink_onset, blink_offset in zip(blinks['blink_onset'], blinks['blink_offset']):
+            if blink_onset <= timestamp <= blink_offset:
+                in_blink_period = True
+                break
+        if not in_blink_period:
+            total_size += size
+            valid_count += 1
 
-    # Mark the blink periods as invalid
-    for onset, offset in zip(blink_onset_indices, blink_offset_indices):
-        valid_indices.iloc[onset:offset] = False
-
-    # Calculate the average pupil size using only the valid data points
-    avg_pupil_size = pupil_size[valid_indices].mean()
-
-    return avg_pupil_size
+    return total_size / valid_count if valid_count > 0 else 0.0
 
 
-def missing_data_excluding_blinks_both_pupils(pupil_size_left, pupil_size_right, onsets, offsets, timestamps):
+def missing_data_excluding_blinks_both_pupils(pupil_size_left, pupil_size_right, blinks, timestamps):
     """
     Identify samples with missing data, excluding periods marked as blinks. Useful when you have two
     pupil sizes which you want to take into account
@@ -162,13 +132,15 @@ def missing_data_excluding_blinks_both_pupils(pupil_size_left, pupil_size_right,
     Parameters:
     pupil_size_left (np.ndarray): Array of pupil sizes for the left eye, with NaN indicating missing values.
     pupil_size_right (np.ndarray): Array of pupil sizes for the right eye, with NaN indicating missing values.
-    onsets (np.ndarray): Array of blink onset timestamps.
-    offsets (np.ndarray): Array of blink offset timestamps.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
     timestamps (np.ndarray): Array of timestamps for the samples.
 
     Returns:
     np.ndarray: Boolean array where True indicates missing data not within blink periods.
     """
+    onsets = blinks["blink_onset"]
+    offsets = blinks["blink_offset"]
+
     # Initialize an array to hold missing data flags
     missing_pupil_size = np.isnan(pupil_size_left) & np.isnan(pupil_size_right)
 
@@ -188,6 +160,42 @@ def missing_data_excluding_blinks_both_pupils(pupil_size_left, pupil_size_right,
     return missing_data
 
 
+def missing_data_excluding_blinks_single_pupil(pupil_size, blinks, timestamps):
+    """
+    Identify indices of missing data that are not caused by blinks.
+
+    This function considers a sample missing if the pupil size data
+    is NaN (Not a Number). It then uses blink detection results
+    to exclude missing data points occurring during blinks.
+
+    Parameters:
+    pupil_size (np.array): Array containing pupil size data.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
+    timestamps (np.array): Array containing timestamps for each data point.
+
+    Returns:
+    np.array: Boolean array indicating missing data indices (True)
+              excluding those caused by blinks (False).
+    """
+    onsets = blinks["blink_onset"]
+    offsets = blinks["blink_offset"]
+
+    # Detect missing data
+    missing_pupil_size = np.isnan(pupil_size)
+
+    # Initialize array and iterate through missing data points
+    missing_data = np.zeros_like(missing_pupil_size, dtype=bool)
+    for i, is_nan in enumerate(missing_pupil_size):
+        if is_nan:
+            timestamp = timestamps[i]
+            in_blink = any(blink_onset <= timestamp <= blink_offset for blink_onset, blink_offset in
+                           zip(onsets, offsets))
+            if not in_blink:
+                missing_data[i] = True
+
+    return missing_data
+
+
 def missing_data_excluding_time_range(bool_array_of_missing_values, sampling_freq):
     """
     This function iterates through a boolean array representing missing data
@@ -197,6 +205,7 @@ def missing_data_excluding_time_range(bool_array_of_missing_values, sampling_fre
 
     Parameters:
     bool_array_of_missing_values (np.array): Boolean array where True indicates missing data.
+    (Generated from missing_data_excluding_blinks_single_pupil or missing_data_excluding_blinks_both_pupils)
     sampling_freq (int): Sampling frequency of the data in Hz.
 
     Returns:
@@ -230,37 +239,3 @@ def missing_data_excluding_time_range(bool_array_of_missing_values, sampling_fre
             i += 1
 
     return filtered_missing_values
-
-
-def missing_data_excluding_blinks_single_pupil(pupil_size, onsets, offsets, timestamps):
-    """
-    Identify indices of missing data that are not caused by blinks.
-
-    This function considers a sample missing if the pupil size data
-    is NaN (Not a Number). It then uses blink detection results
-    to exclude missing data points occurring during blinks.
-
-    Parameters:
-    pupil_size (np.array): Array containing pupil size data.
-    sampling_freq (int): Sampling frequency of the data in Hz.
-    timestamps (np.array): Array containing timestamps for each data point.
-
-    Returns:
-    np.array: Boolean array indicating missing data indices (True)
-              excluding those caused by blinks (False).
-    """
-
-    # Detect missing data
-    missing_pupil_size = np.isnan(pupil_size)
-
-    # Initialize array and iterate through missing data points
-    missing_data = np.zeros_like(missing_pupil_size, dtype=bool)
-    for i, is_nan in enumerate(missing_pupil_size):
-        if is_nan:
-            timestamp = timestamps[i]
-            in_blink = any(blink_onset <= timestamp <= blink_offset for blink_onset, blink_offset in
-                           zip(onsets, offsets))
-            if not in_blink:
-                missing_data[i] = True
-
-    return missing_data
