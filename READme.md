@@ -1,3 +1,4 @@
+![blinkdetection (500 x 200 px).png](blinkdetection%20%28500%20x%20200%20px%29.png)
 # Introduction
 The purpose of this project is to develop a package (blinkdetection) that uses an algorithm for blink detection to be used for the analysis of 
 data from eye trackers such as Tobii products.

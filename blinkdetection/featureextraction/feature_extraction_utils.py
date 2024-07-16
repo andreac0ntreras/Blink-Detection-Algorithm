@@ -145,14 +145,6 @@ def pupil_size_variability(pupil_size, timestamps, blinks):
     Returns:
     float: The standard deviation of the pupil size excluding the blink periods.
     """
-    if pupil_size.empty or timestamps.empty:
-        print("Empty pupil_size or timestamps series.")
-        return float('nan')
-
-    if 'blink_onset' not in blinks or 'blink_offset' not in blinks:
-        print("Blinks dictionary does not contain required keys.")
-        return float('nan')
-
     blink_onset = blinks['blink_onset']
     blink_offset = blinks['blink_offset']
 
