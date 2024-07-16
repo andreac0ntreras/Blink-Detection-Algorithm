@@ -73,7 +73,7 @@ def calculate_inter_blink_interval(blinks):
     ibi (list): List of inter-blink intervals in seconds.
     """
     # Ensure blink onsets are sorted
-    blink_onsets = sorted(blinks["blink_onset"].values)
+    blink_onsets = sorted(blinks["blink_onset"])
 
     # Calculate the intervals between consecutive blinks
     ibi = np.diff(blink_onsets)
@@ -108,20 +108,79 @@ def average_pupil_size_without_blinks(pupil_size, timestamps, blinks):
     Returns:
     float: The average pupil size excluding the blink periods.
     """
+    # Remove NaN values from pupil_size and the corresponding timestamps
+    # We must remove the nan values because adding an nan value to a numerical value results in nan.
+    # Also, nan means the pupil size was not recorded, meaning no valuable pupil size data is lost in
+    # removing nan periods
+    valid_mask = ~pupil_size.isna()
+    pupil_size = pupil_size[valid_mask]
+    timestamps = timestamps[valid_mask]
+
     total_size = 0.0
     valid_count = 0
 
     for size, timestamp in zip(pupil_size, timestamps):
         in_blink_period = False
-        for blink_onset, blink_offset in zip(blinks['blink_onset'], blinks['blink_offset']):
-            if blink_onset <= timestamp <= blink_offset:
+        for onset, offset in zip(blinks["blink_onset"], blinks["blink_offset"]):
+            if onset <= timestamp <= offset:
                 in_blink_period = True
                 break
         if not in_blink_period:
             total_size += size
             valid_count += 1
 
-    return total_size / valid_count if valid_count > 0 else 0.0
+    average_size = total_size / valid_count if valid_count > 0 else float('nan')
+    return average_size
+
+
+def pupil_size_variability(pupil_size, timestamps, blinks):
+    """
+    Calculate the pupil size variability excluding the blink periods.
+
+    Parameters:
+    pupil_size (pd.Series): Series containing a timeseries of the pupil sizes of one eye.
+    timestamps (pd.Series): Series of timestamps corresponding to the list of pupil sizes.
+    blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys with the timestamps as the values.
+
+    Returns:
+    float: The standard deviation of the pupil size excluding the blink periods.
+    """
+    if pupil_size.empty or timestamps.empty:
+        print("Empty pupil_size or timestamps series.")
+        return float('nan')
+
+    if 'blink_onset' not in blinks or 'blink_offset' not in blinks:
+        print("Blinks dictionary does not contain required keys.")
+        return float('nan')
+
+    blink_onset = blinks['blink_onset']
+    blink_offset = blinks['blink_offset']
+
+    if blink_onset.empty or blink_offset.empty:
+        print("Blink onset or offset series is empty.")
+        return float('nan')
+
+    # Remove NaN values from pupil_size and the corresponding timestamps
+    valid_mask = ~pupil_size.isna()
+    pupil_size = pupil_size[valid_mask]
+    timestamps = timestamps[valid_mask]
+
+    valid_pupil_sizes = []
+
+    for size, timestamp in zip(pupil_size, timestamps):
+        in_blink_period = False
+        for onset, offset in zip(blink_onset, blink_offset):
+            if onset <= timestamp <= offset:
+                in_blink_period = True
+                break
+        if not in_blink_period:
+            valid_pupil_sizes.append(size)
+
+    if len(valid_pupil_sizes) == 0:
+        return float('nan')
+
+    variability = np.std(valid_pupil_sizes)
+    return variability
 
 
 def missing_data_excluding_blinks_both_pupils(pupil_size_left, pupil_size_right, blinks, timestamps):

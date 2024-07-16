@@ -124,7 +124,7 @@ def plot_all_time_v_pupil_size_csv_files_in_directory(folder, show=False):
     show (bool): indication of whether to display the plot.
     """
     # Get a list of all files in the specified folder
-    files = os.listdir(folder)
+    files = sorted(os.listdir(folder))
 
     # Filter the list to include only CSV files
     csv_files = [f for f in files if f.endswith('.csv')]
@@ -135,13 +135,9 @@ def plot_all_time_v_pupil_size_csv_files_in_directory(folder, show=False):
         file_path = os.path.join(folder, csv_file)
 
         # Plot the pupil size data for the current CSV file
-        plot_pupil_size_v_time_w_both_eyes_blink_onset_and_offsets(file_path)
-
-    if show is True:
-        plt.show()
+        plot_pupil_size_v_time_w_both_eyes_blink_onset_and_offsets(file_path, show=show)
 
     plt.clf()
-
 
 def plot_feature_over_three_days(compiled_df, show=False):
     """
