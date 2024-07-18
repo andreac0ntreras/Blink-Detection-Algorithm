@@ -31,7 +31,6 @@ pandas==2.2.2
 matplotlib==3.8.4
 pyxdf
 plotly
-statsmodels
 seaborn
 ```
 
@@ -52,19 +51,25 @@ bd.process_xdf_files(folder_path, interim_folder)
 This line of code uses functions from the sourcing folder in the blinkdetection package to convert the raw XDF Files to interim CSV files 
 that contain the relevant variables
 
-## Blink Detection and Processing
+## Blink Detection and Feature Extraction
 After generating an interim CSV file containing the pupil sizes and timestamps for each day and participant, 
 we can now implement our blink detection algorithm. 
 
 The interim CSV files containing the pupil sizes and timestamps for each day and subject are located in the _output/interim/_ directory
 
-By running the following line in the main.py file,
-an output CSV file called _compiled_feature_extraction.csv_ is generated (in the _output/features_ directory) 
-with columns subject, day, left_blink_onsets, left_blink_offsets, right_blink_onsets, right_blink_offsets, and many
-other features in generated
+By running the following line in the main.py file, output CSV files called
+_compiled_feature_extraction.csv_ and _compiled_blink_extraction.csv_ are 
+generated (in the _output/features_ directory) 
+
+_compiled_blink_extraction.csv_ and compiled_blink_df (pd.DataFrame) contain the columns subject, day, 
+left_blink_onsets, right_blink_onsets, concat_blink_onsets, right_blink_offsets, left_blink_offsets, 
+and concat_blink_offsets 
+
+_compiled_feature_extraction.csv_ and compiled_feature_df (pd.DataFrame) contain the columns subject, day, 
+left_ebr, right_ebr, left_ibi, right_ibi, and many others that show the extracted features from 
 
 ```doctest
-compiled_df = bd.process_csv_files(interim_folder)
+compiled_feature_df, compiled_blink_df = bd.process_csv_files(interim_folder)
 ```
 
 ## Plotting
