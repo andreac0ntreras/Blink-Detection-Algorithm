@@ -62,6 +62,129 @@ def calculate_blink_duration_variability(blinks):
     return blink_duration_variability
 
 
+def onset_difference(left_blinks, right_blinks, tolerance=.15):
+    """
+    Calculates the difference in seconds between the same blinks charectarized in the left and right eyes.
+
+    Parameters:
+        left_blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys for the left eye with the timestamps
+        as the values.
+        right_blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys for the right eye with the timestamps
+        as the values.
+        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
+        to consider them as a single blink event. Default is 0.15 seconds.
+
+    Returns:
+        difference_of_onsets (float): The mean difference between the time at which the left eye
+        registed an offset vs the right eye.
+
+    """
+    left_onsets = np.array(left_blinks["blink_onset"])
+    right_onsets = np.array(right_blinks["blink_onset"])
+    summed_differences = 0
+
+    i, j = 0, 0
+    counter = 0
+    while i < len(left_onsets) and j < len(right_onsets):
+        if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
+            summed_differences += abs(left_onsets[i] - right_onsets[j])
+            i += 1
+            j += 1
+            counter += 1
+        elif left_onsets[i] < right_onsets[j]:
+            i += 1
+        else:
+            j += 1
+
+    if counter == 0:
+        return float('nan')
+
+    difference_of_onsets = summed_differences/counter
+
+    return difference_of_onsets
+
+
+def offset_difference(left_blinks, right_blinks, tolerance=.15):
+    """
+    Calculates the difference in seconds between the same blinks charectarized in the left and right eyes.
+
+    Parameters:
+        left_blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys for the left eye with the timestamps
+        as the values.
+        right_blinks (dict): dict containing 'blink_onset' and 'blink_offset' keys for the right eye with the timestamps
+        as the values.
+        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
+        to consider them as a single blink event. Default is 0.15 seconds.
+
+    Returns:
+        difference_of_offsets (float): The mean difference between the time at which the left eye
+        registed an offset vs the right eye.
+    """
+    left_offsets = np.array(left_blinks["blink_offset"])
+    right_offsets = np.array(right_blinks["blink_offset"])
+    summed_differences = 0
+
+    i, j = 0, 0
+    counter = 0
+    while i < len(left_offsets) and j < len(right_offsets):
+        if abs(left_offsets[i] - right_offsets[j]) <= tolerance:
+            summed_differences += abs(left_offsets[i] - right_offsets[j])
+            i += 1
+            j += 1
+            counter += 1
+        elif left_offsets[i] < right_offsets[j]:
+            i += 1
+        else:
+            j += 1
+
+    if counter == 0:
+        return float('nan')
+
+    difference_of_offsets = summed_differences / counter
+
+    return difference_of_offsets
+
+
+def duration_difference(left_blinks, right_blinks, tolerance=.15):
+    """
+    Calculates the difference in seconds between the durations of the same blinks characterized in the left and right eyes.
+
+    Parameters:
+        left_blinks (dict): Dictionary containing 'blink_onset' and 'blink_offset' keys for the left eye with the timestamps as the values.
+        right_blinks (dict): Dictionary containing 'blink_onset' and 'blink_offset' keys for the right eye with the timestamps as the values.
+        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets to consider them as a single blink event. Default is 0.15 seconds.
+
+    Returns:
+        float: The mean difference between the durations of the blinks for the left eye vs the right eye.
+    """
+    left_onsets = np.array(left_blinks["blink_onset"])
+    left_offsets = np.array(left_blinks["blink_offset"])
+    right_onsets = np.array(right_blinks["blink_onset"])
+    right_offsets = np.array(right_blinks["blink_offset"])
+
+    left_durations = left_offsets - left_onsets
+    right_durations = right_offsets - right_onsets
+
+    summed_differences = 0
+    i, j = 0, 0
+    counter = 0
+    while i < len(left_onsets) and j < len(right_onsets):
+        if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
+            summed_differences += abs(left_durations[i] - right_durations[j])
+            i += 1
+            j += 1
+            counter += 1
+        elif left_onsets[i] < right_onsets[j]:
+            i += 1
+        else:
+            j += 1
+
+    if counter == 0:
+        return float('nan')
+
+    return summed_differences / counter
+
+
 def calculate_inter_blink_interval(blinks):
     """
     Calculate the inter-blink interval (IBI) from blink onset times.
@@ -83,7 +206,7 @@ def calculate_inter_blink_interval(blinks):
 
 def mean_inter_blink_interval(ibi):
     """
-    Calculate the mean inter-blink interval (IBI) excluding the blink periods.
+    Calculate the mean inter-blink interval (IBI).
 
     Parameters:
     ibi (list): List of inter-blink intervals in seconds.
@@ -94,6 +217,21 @@ def mean_inter_blink_interval(ibi):
     """
     mean_ibi = np.mean(ibi)
     return mean_ibi
+
+
+def inter_blink_interval_variability(ibi):
+    """
+    Calculate the inter-blink interval (IBI) variability.
+
+    Parameters:
+    ibi (list): List of inter-blink intervals in seconds.
+    (This is generated using the calculate_inter_blink_interval function.)
+
+    Returns:
+    ibi_var (float): The variability of the inter-blink interval.
+    """
+    ibi_var = np.std(ibi)
+    return ibi_var
 
 
 def average_pupil_size_without_blinks(pupil_size, timestamps, blinks):

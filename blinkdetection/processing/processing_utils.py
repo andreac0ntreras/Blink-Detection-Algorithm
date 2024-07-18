@@ -23,6 +23,12 @@ def process_individual_feature_extraction_csv(csv_file, folder):
         - 'left_ibi': Average inter-blink interval (IBI) for the left pupil.
         - 'right_ibi': Average inter-blink interval (IBI) for the right pupil.
         - 'concat_ibi': Average inter-blink interval (IBI) for concatenated blinks.
+        - 'left_ibi_var': Variability of inter-blink interval for the left pupil.
+        - 'right_ibi_var': Variability of inter-blink interval for the right pupil.
+        - 'concat_ibi_var': Variability of inter-blink interval for concatenated blinks.
+        - 'onset_diff': Mean difference between the time at which the left eye registered an onset vs the right eye.
+        - 'offset_diff': Mean difference between the time at which the left eye registered an offset vs the right eye.
+        - 'duration_diff': Mean difference between the durations of the blinks for the left eye vs the right eye.
         - 'left_bd': Average blink duration for the left pupil.
         - 'right_bd': Average blink duration for the right pupil.
         - 'left_bdv': Variability of blink duration for the left pupil.
@@ -35,12 +41,9 @@ def process_individual_feature_extraction_csv(csv_file, folder):
         - 'right_missing': Percentage of missing data for the right pupil.
         - 'left_missing_exb': Percentage of missing data for the left pupil excluding blink periods.
         - 'right_missing_exb': Percentage of missing data for the right pupil excluding blink periods.
-        - 'left_missing_exb_ext': Percentage of missing data for the left pupil excluding blink periods and a minimum
-        time range (100ms).
-        - 'right_missing_exb_ext': Percentage of missing data for the right pupil excluding blink periods and a minimum
-        time range (100ms).
+        - 'left_missing_exb_ext': Percentage of missing data for the left pupil excluding blink periods and a minimum time range (100ms).
+        - 'right_missing_exb_ext': Percentage of missing data for the right pupil excluding blink periods and a minimum time range (100ms).
     """
-
     # Extract subject ID and day number from filename components
     subject_id, day_number = csv_file.split('_')[0], csv_file.split('_')[4].split('.')[0]
 
@@ -108,6 +111,15 @@ def process_individual_feature_extraction_csv(csv_file, folder):
     right_avg_ibi = feature_extraction_utils.mean_inter_blink_interval(right_ibi)
     concat_avg_ibi = feature_extraction_utils.mean_inter_blink_interval(concat_ibi)
 
+    left_ibi_var = feature_extraction_utils.inter_blink_interval_variability(left_ibi)
+    right_ibi_var = feature_extraction_utils.inter_blink_interval_variability(right_ibi)
+    concat_ibi_var = feature_extraction_utils.inter_blink_interval_variability(concat_ibi)
+
+    # Calculate sync of data
+    onset_diff = feature_extraction_utils.onset_difference(left_blinks, right_blinks)
+    offset_diff = feature_extraction_utils.offset_difference(left_blinks, right_blinks)
+    duration_diff = feature_extraction_utils.duration_difference(left_blinks, right_blinks)
+
     # Calculate average pupil size
     left_avg_pupil_size = feature_extraction_utils.average_pupil_size_without_blinks(pupil_size_left, timestamps,
                                                                                      left_blinks)
@@ -129,6 +141,12 @@ def process_individual_feature_extraction_csv(csv_file, folder):
         'left_ibi': left_avg_ibi,
         'right_ibi': right_avg_ibi,
         'concat_ibi': concat_avg_ibi,
+        'left_ibi_var': left_ibi_var,
+        'right_ibi_var': right_ibi_var,
+        'concat_ibi_var': concat_ibi_var,
+        'onset_diff': onset_diff,
+        'offset_diff' : offset_diff,
+        'duration_diff': duration_diff,
         'left_bd': left_average_blink_duration,
         'right_bd': right_average_blink_duration,
         'left_bdv': left_blink_duration_variability,
