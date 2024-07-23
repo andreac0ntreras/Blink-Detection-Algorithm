@@ -46,10 +46,10 @@ def both_pupils_blink_detection(pupil_size_left, pupil_size_right, sampling_freq
     Behav. Res. Methods, vol. 50, no. 1, pp. 107–114, 2018.
 
     Input:
-        pupil_size_left: A numpy array or list containing pupil size data for the left eye.
-        pupil_size_right: A numpy array or list containing pupil size data for the right eye.
-        sampling_freq: The sampling frequency of the eye-tracking hardware, given in Hz.
-        timestamps: A numpy array or list containing the timestamps corresponding to the pupil size
+        pupil_size_left (np.ndarray): A numpy array or list containing pupil size data for the left eye.
+        pupil_size_right (np.ndarray): A numpy array or list containing pupil size data for the right eye.
+        sampling_freq (float): The sampling frequency of the eye-tracking hardware, given in Hz.
+        timestamps (np.ndarray): A numpy array or list containing the timestamps corresponding to the pupil size
     Output:
         blinks: [dictionary] {"blink_onset", "blink_offset"}
         containing numpy array/list of blink onset and offset timestamps
@@ -248,8 +248,8 @@ def single_pupil_blink_detection(pupil_size, sampling_freq, timestamps):
     Behav. Res. Methods, vol. 50, no. 1, pp. 107–114, 2018.
 
     Input:
-        pupil_size: A numpy array or list containing pupil size data for one eye.
-        sampling_freq: The sampling frequency of the eye-tracking hardware, given in Hz.
+        pupil_size (np.ndarray): A numpy array or list containing pupil size data for one eye.
+        sampling_freq (float): The sampling frequency of the eye-tracking hardware, given in Hz.
         timestamps: A numpy array or list containing the timestamps corresponding to the pupil size
     Output:
         blinks: [dictionary] {"blink_onset", "blink_offset"}
