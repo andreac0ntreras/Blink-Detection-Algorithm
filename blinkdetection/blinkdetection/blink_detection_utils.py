@@ -430,15 +430,15 @@ def identify_concat_blinks(left_blinks, right_blinks, tolerance=.15):
         The identified concurrent blinks are then concatenated into single onsets
         and offsets using the average of the overlapping values.
 
-        Parameters:
-        left_blinks (dict): A DataFrame containing 'blink_onset' and 'blink_offset' columns for left eye blinks.
-        right_blinks (dict): A DataFrame containing 'blink_onset' and 'blink_offset' columns for right eye blinks.
-        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
-                           to consider them as a single blink event. Default is 0.15 seconds.
+        Input:
+            left_blinks (dict): A DataFrame containing 'blink_onset' and 'blink_offset' columns for left eye blinks.
+            right_blinks (dict): A DataFrame containing 'blink_onset' and 'blink_offset' columns for right eye blinks.
+            tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets
+                               to consider them as a single blink event. Default is 0.15 seconds.
 
         Output:
-        blinks: [dictionary] {"blink_onset", "blink_offset"}
-        containing numpy array/list of concat blink onset and offset timestamps
+            blinks: [dictionary] {"blink_onset", "blink_offset"}
+            containing numpy array/list of concat blink onset and offset timestamps
     """
     # Convert blink onset and offset times to numpy arrays for efficient computation
     left_onsets = np.array(left_blinks["blink_onset"])
