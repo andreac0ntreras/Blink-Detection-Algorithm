@@ -3,7 +3,7 @@ THIS USES CODE FROM RESEACRH PAPER HERSHMAN TO DETECT BLINKS
 This adaptation to Python was made with the supervision and encouragement of Upamanyu Ghose
 For more information about this adaptation and for more Python solutions, don't hesitate to contact him:
 Email: titoghose@gmail.com
-Github code repository: github.com/titoghose
+GitHub code repository: github.com/titoghose
 """
 import numpy as np
 
@@ -439,36 +439,45 @@ def identify_concat_blinks(left_blinks, right_blinks, tolerance=.15):
         Output:
         blinks: [dictionary] {"blink_onset", "blink_offset"}
         containing numpy array/list of concat blink onset and offset timestamps
-
-        Returns:
-        concat_onsets (list): A list of concatenated blink onset times.
-        concat_offsets (list): A list of concatenated blink offset times.
     """
+    # Convert blink onset and offset times to numpy arrays for efficient computation
     left_onsets = np.array(left_blinks["blink_onset"])
     left_offsets = np.array(left_blinks["blink_offset"])
     right_onsets = np.array(right_blinks["blink_onset"])
     right_offsets = np.array(right_blinks["blink_offset"])
+
+    # Initialize lists to store concatenated onsets and offsets
     concat_onsets = []
     concat_offsets = []
 
-    # initializes output
+    # Initializes output dictionary
     blink_onset = []
     blink_offset = []
     blinks = {"blink_onset": blink_onset, "blink_offset": blink_offset}
 
+    # Initialize indices for left and right blinks
     i, j = 0, 0
+
+    # Iterate through both left and right blink onsets
     while i < len(left_onsets) and j < len(right_onsets):
+        # Check if the onsets are within the tolerance to consider them as a single blink event
         if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
+            # Calculate the average onset time and append to the list
             concat_onsets.append(np.mean([left_onsets[i], right_onsets[j]]))
+            # Ensure that the offsets are also within bounds before averaging
             if i < len(left_offsets) and j < len(right_offsets):
                 concat_offsets.append(np.mean([left_offsets[i], right_offsets[j]]))
+            # Move to the next blink for both left and right eyes
             i += 1
             j += 1
+        # If the left onset is smaller, move to the next left blink
         elif left_onsets[i] < right_onsets[j]:
             i += 1
+        # If the right onset is smaller, move to the next right blink
         else:
             j += 1
 
+    # Update the output dictionary with the concatenated onsets and offsets
     blinks["blink_onset"] = concat_onsets
     blinks["blink_offset"] = concat_offsets
 
