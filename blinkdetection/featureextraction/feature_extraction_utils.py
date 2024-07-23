@@ -151,6 +151,59 @@ def offset_difference(left_blinks, right_blinks, tolerance=.15):
     # If no matching blinks are found, return NaN
 
 
+def duration_difference(left_blinks, right_blinks, tolerance=.15):
+    """
+    Calculates the difference in seconds between the durations of the same blinks characterized in the left and right
+    eyes.
+
+    Parameters:
+        left_blinks (dict): Dictionary containing 'blink_onset' and 'blink_offset' keys for the left eye with the
+        timestamps as the values.
+        right_blinks (dict): Dictionary containing 'blink_onset' and 'blink_offset' keys for the right eye with the
+        timestamps as the values.
+        tolerance (float): The maximum allowed difference (in seconds) between left and right blink onsets to consider
+        them as a single blink event. Default is 0.15 seconds.
+
+    Returns:
+        duration_diff (float): The mean difference between the durations of the blinks for the left eye vs the
+        right eye.
+    """
+    left_onsets = np.array(left_blinks["blink_onset"])
+    left_offsets = np.array(left_blinks["blink_offset"])
+    right_onsets = np.array(right_blinks["blink_onset"])
+    right_offsets = np.array(right_blinks["blink_offset"])
+
+    # Calculate the durations of blinks for both eyes
+    left_durations = left_offsets - left_onsets
+    right_durations = right_offsets - right_onsets
+
+    summed_differences = 0
+    i, j = 0, 0
+    counter = 0
+    # Iterate through the onsets of both eyes
+    while i < len(left_onsets) and j < len(right_onsets):
+        # If the onsets are within the tolerance, calculate the difference in durations
+        if abs(left_onsets[i] - right_onsets[j]) <= tolerance:
+            summed_differences += abs(left_durations[i] - right_durations[j])
+            i += 1
+            j += 1
+            counter += 1
+        # If the left onset is earlier, move to the next left onset
+        elif left_onsets[i] < right_onsets[j]:
+            i += 1
+        # If the right onset is earlier, move to the next right onset
+        else:
+            j += 1
+
+    # If no matching blinks are found, return NaN
+    if counter == 0:
+        return float('nan')
+
+    # Calculate the mean difference of the durations
+    duration_diff = summed_differences / counter
+    return duration_diff
+
+
 def calculate_inter_blink_interval(blinks):
     """
     Calculate the inter-blink interval (IBI) from blink onset times.

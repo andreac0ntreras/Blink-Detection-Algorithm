@@ -10,8 +10,8 @@ def process_individual_feature_extraction_csv(csv_file, folder):
     Process an individual CSV file to calculate various features within the blink and pupil size data.
 
     Parameters:
-    csv_file (str): Name of the CSV file to process.
-    folder (str): Path to the folder containing the CSV file.
+        csv_file (str): Name of the CSV file to process.
+        folder (str): Path to the folder containing the CSV file.
 
     Returns:
     dict: A dictionary containing the following keys:
@@ -172,8 +172,8 @@ def process_individual_blink_csv(csv_file, folder):
     ones that are consistent among the two.
 
     Parameters:
-    csv_file (str): Name of the CSV file to process.
-    folder (str): Path to the folder containing the CSV file.
+        csv_file (str): Name of the CSV file to process.
+        folder (str): Path to the folder containing the CSV file.
 
     dict: A dictionary containing the following keys:
         - 'subject': Subject ID extracted from the filename.
@@ -228,10 +228,10 @@ def process_csv_files(folder):
     Process all CSV files in the specified folder and save blink rate and other feature results to a CSV file.
 
     Parameters:
-    folder (str): Path to the folder containing CSV files.
+        folder (str): Path to the folder containing CSV files.
 
     Returns:
-    results_df (pd.DataFrame): Dataframe containing blink related variables for each subject in the folder
+        results_df (pd.DataFrame): Dataframe containing blink related variables for each subject in the folder
     """
     # Initialize list of results
     results_feature_extraction = []

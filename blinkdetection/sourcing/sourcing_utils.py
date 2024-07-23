@@ -9,10 +9,10 @@ def load_xdf_file(file_path):
     Load XDF file using pyxdf.
 
     Parameters:
-    file_path (str): Path to the XDF file.
+        file_path (str): Path to the XDF file.
 
     Returns:
-    tuple: Data and header extracted from the XDF file.
+        tuple: Data and header extracted from the XDF file.
     """
     return pyxdf.load_xdf(file_path)
 
@@ -22,10 +22,10 @@ def extract_streams(data):
     Extract eyetracker and event streams from the loaded XDF data.
 
     Parameters:
-    data (list): List containing streams from the XDF file.
+        data (list): List containing streams from the XDF file.
 
     Returns:
-    tuple containing the following:
+        tuple containing the following:
      eyetracker_channel_data: streams of both the left and right eye x-position, y-position, and size.
      eyetracker_timestamps: stream of timestamps that correspond with the eyetracker_channel_data stream.
      event_data: list of event codes: [101, 102, 201, 202, 101, 102]:
@@ -62,11 +62,11 @@ def get_resting_state_timestamps(event_timestamps, rs_recording=1):
     Get start and end timestamps for a resting state.
 
     Parameters:
-    event_timestamps (list): List of event timestamps.
-    rs_recording (int 1 or 2): Which resting state recording are you looking to pull from? (default 1)
+        event_timestamps (list): List of event timestamps.
+        rs_recording (int 1 or 2): Which resting state recording are you looking to pull from? (default 1)
 
     Returns:
-    tuple: Start and end timestamps for the second resting state.
+        tuple: Start and end timestamps for the second resting state.
 
     Note: Event codes are hard coded because they are the same across participants, however, we are not
     able to create a dictionary out of them, because the first resting state and the second resting state have the
@@ -101,13 +101,14 @@ def filter_resting_state_data(channel_data, timestamps, start_time, end_time):
     Filter out data from the second resting state.
 
     Parameters:
-    channel_data (np.array): Array containing channel data.
-    timestamps (np.array): Array containing timestamps.
-    start_time (float): Start time of the second resting state.
-    end_time (float): End time of the second resting state.
+        channel_data (np.array): Array containing channel data.
+        timestamps (np.array): Array containing timestamps.
+        start_time (float): Start time of the second resting state.
+        end_time (float): End time of the second resting state.
 
     Returns:
-    tuple: Filtered pupil sizes and timestamps for the second resting state.
+        pupil_size_left, pupil_size_right, timestamps (tuple): Filtered pupil sizes and timestamps for the first
+        resting state.
     """
     # Filter timestamps within the resting state window
     resting_timestamps = (timestamps >= start_time) & (timestamps <= end_time)
@@ -127,10 +128,10 @@ def save_to_csv(timestamps, pupil_size_left, pupil_size_right, output_csv):
     Save the filtered data to a CSV file.
 
     Parameters:
-    timestamps (np.array): Array containing timestamps.
-    pupil_size_left (np.array): Array containing left pupil sizes.
-    pupil_size_right (np.array): Array containing right pupil sizes.
-    output_csv (str): Output CSV file path.
+        timestamps (np.array): Array containing timestamps.
+        pupil_size_left (np.array): Array containing left pupil sizes.
+        pupil_size_right (np.array): Array containing right pupil sizes.
+        output_csv (str): Output CSV file path.
     """
     # Creates dataframe with specified column names
     df = pd.DataFrame({
@@ -149,8 +150,8 @@ def process_xdf_files(folder_path, output_folder):
     Process all XDF files in the specified folder and save the filtered data to CSV files.
 
     Parameters:
-    folder_path (str): Path to the folder containing XDF files.
-    output_folder (str): Path to the output folder for CSV files.
+        folder_path (str): Path to the folder containing XDF files.
+        output_folder (str): Path to the output folder for CSV files.
     """
     os.makedirs(output_folder, exist_ok=True)
 

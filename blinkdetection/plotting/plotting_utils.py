@@ -10,7 +10,7 @@ def plot_pupil_size_v_time_w_concat_onsets_and_offsets(csv_file, show=False):
     This function reads a CSV file containing pupil size data, detects blinks,
     and plots pupil size (left and right eye) vs time.
 
-    Args:
+    Parameters:
         csv_file (str): Path to the CSV file containing pupil size data.
         show (bool): indication of whether to display the plot
     """
@@ -63,7 +63,7 @@ def plot_pupil_size_v_time_w_both_eyes_blink_onset_and_offsets(csv_file, show=Fa
     This function reads a CSV file containing pupil size data, detects blinks,
     and plots pupil size (left and right eye) vs time.
 
-    Args:
+    Parameters:
         csv_file (str): Path to the CSV file containing pupil size data.
         show (bool): indication of whether to display the plot
     """
@@ -120,8 +120,8 @@ def plot_all_time_v_pupil_size_csv_files_in_directory(folder, show=False):
     Plot pupil size data over time with blink annotations for all CSV files in the specified folder.
 
     Parameters:
-    folder (str): Path to the folder containing CSV files.
-    show (bool): indication of whether to display the plot.
+        folder (str): Path to the folder containing CSV files.
+        show (bool): indication of whether to display the plot.
     """
     # Get a list of all files in the specified folder
     files = sorted(os.listdir(folder))
@@ -139,11 +139,12 @@ def plot_all_time_v_pupil_size_csv_files_in_directory(folder, show=False):
 
     plt.clf()
 
+
 def plot_feature_over_three_days(compiled_df, show=False):
     """
     Plot blink rate and missing data percentage across three days for each subject.
 
-    Args:
+    Parameters:
         compiled_df (pd.DataFrame): The return of process_individual_csv, which is a DataFrame containing columns
                                     corresponding to different features.
         show (bool): indication of whether to display the plot
