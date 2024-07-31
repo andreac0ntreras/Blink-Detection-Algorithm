@@ -5,7 +5,7 @@ import seaborn as sns
 from blinkdetection.blinkdetection import blink_detection_utils
 
 
-def plot_pupil_size_v_time_w_concat_onsets_and_offsets(csv_file, show=False):
+def plot_pupil_size_v_time(csv_file, show=False):
     """
     This function reads a CSV file containing pupil size data, detects blinks,
     and plots pupil size (left and right eye) vs time.
@@ -24,7 +24,7 @@ def plot_pupil_size_v_time_w_concat_onsets_and_offsets(csv_file, show=False):
     pupil_size_right = dataframe['pupil_size_right']
 
     # Detect blinks using a separate function (not included here)
-    blinks = blink_detection_utils.both_pupils_blink_detection(pupil_size_left, pupil_size_right, 600, timestamps)
+    blinks = blink_detection_utils.calculate_total_blinks_and_missing_data(dataframe, 600)
 
     # Plot pupil size vs time for left and right eye
     plt.plot(timestamps, pupil_size_left, label='Left Size')
@@ -77,7 +77,7 @@ def plot_pupil_size_v_time_w_both_eyes_blink_onset_and_offsets(csv_file, show=Fa
     pupil_size_right = dataframe['pupil_size_right']
 
     # Detect blinks using a separate function (not included here)
-    left_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_left, 600, timestamps)
+    left_blinks = blink_detection_utils.calculate_total_blinks_and_missing_data(dataframe, 600)
     right_blinks = blink_detection_utils.single_pupil_blink_detection(pupil_size_right, 600, timestamps)
 
     # Plot pupil size vs time for left and right eye
@@ -162,12 +162,12 @@ def plot_feature_over_three_days(compiled_df, show=False):
 
     # Transform the data to long format if needed
     blink_rate_data_long = compiled_df.pivot(index='subject', columns='day',
-                                             values='concat_average_blink_rate').reset_index()
+                                             values='concat_ebr').reset_index()
     blink_rate_data_long.columns = ['subject', 'day1', 'day2', 'day3']
 
     # Transform the data to long format if needed
     missing_data_long = (compiled_df.pivot(index='subject', columns='day',
-                                           values='left_missing_data_percentage_excluding_blinks_and_min_time_range').
+                                           values= 'left_missing_exb_ext').
                          reset_index())
     missing_data_long.columns = ['subject', 'day1', 'day2', 'day3']
 
@@ -198,3 +198,102 @@ def plot_feature_over_three_days(compiled_df, show=False):
     if show is True:
         plt.show()
     plt.clf()
+
+
+def plot_left_vs_right_ebr_agreement(df):
+    """
+    Plots the agreement between left and right Eye Blink Rate (EBR) with color-coded points
+    based on the amount of missing data not accounted for by blinks. Points are darker if
+    the average missing data for that participant is greater than the dataset's average missing data.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the columns 'left_ebr', 'right_ebr',
+                       'left_missing_exb_ext', and 'right_missing_exb_ext'
+    """
+    plt.figure(figsize=(10, 6))
+
+    # Calculate average of left_missing_exb_ext and right_missing_exb_ext
+    # This will give us an average of the amount of missing data not accounted by blinks for each participant
+    # and each day
+    avg_missing_exb_ext = (df['left_missing_exb_ext'] + df['right_missing_exb_ext']) / 2
+
+    # Color of the points representing the participants is light blue if the average missing data for that
+    # participant is less than the average missing dta in the entire dataset. Color the point dark blue if
+    # the average missing data is greater than the average missing data in the entire dataset
+    for index, row in df.iterrows():
+        color = 'blue' if avg_missing_exb_ext.iloc[index] > df['left_missing_exb_ext'].mean() else 'lightblue'
+        plt.scatter(row['left_ebr'], row['right_ebr'], alpha=0.5, color=color)
+
+    # Line with slope 1 (ideal relationship)
+    max_value = max(df['left_ebr'].max(), df['right_ebr'].max())
+    plt.plot([0, max_value], [0, max_value], color='red', linestyle='-', linewidth=2)
+
+    # Dashed lines showing deviation
+    for left_ebr, right_ebr in zip(df['left_ebr'], df['right_ebr']):
+        plt.plot([left_ebr, left_ebr], [left_ebr, right_ebr], color='grey', linestyle='--', linewidth=0.5)
+
+    plt.xlabel('Left EBR')
+    plt.ylabel('Right EBR')
+    plt.title('Left vs. Right EBR')
+    plt.show()
+
+
+def plot_left_vs_right_bd_agreement(df):
+    """
+    Plots the agreement between left and right Blink Duration (BD) with color-coded points
+    based on the amount of missing data not accounted for by blinks. Points are darker if
+    the average missing data for that participant is greater than the dataset's average missing data.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the columns 'left_bd', 'right_bd',
+                       'left_missing_exb_ext', and 'right_missing_exb_ext'
+    """
+    plt.figure(figsize=(10, 6))
+
+    # Calculate average of left_missing_exb_ext and right_missing_exb_ext
+    avg_missing_exb_ext = (df['left_missing_exb_ext'] + df['right_missing_exb_ext']) / 2
+
+    # Get the mean of the average missing data
+    mean_avg_missing_exb_ext = avg_missing_exb_ext.mean()
+
+    # Plot each participant's data point
+    for index, row in df.iterrows():
+        color = 'blue' if avg_missing_exb_ext.iloc[index] > mean_avg_missing_exb_ext else 'lightblue'
+        plt.scatter(row['left_bd'], row['right_bd'], alpha=0.5, color=color)
+
+    # Line with slope 1 (ideal relationship)
+    max_value = max(df['left_bd'].max(), df['right_bd'].max())
+    plt.plot([0, max_value], [0, max_value], color='red', linestyle='-', linewidth=2)
+
+    # Dashed lines showing deviation
+    for left_bd, right_bd in zip(df['left_bd'], df['right_bd']):
+        plt.plot([left_bd, left_bd], [left_bd, right_bd], color='grey', linestyle='--', linewidth=0.5)
+
+    # Set the limits of the plot to ensure the y=x line is well visible
+    plt.xlim(0, max_value)
+    plt.ylim(0, max_value)
+
+    plt.xlabel('Left Blink Duration')
+    plt.ylabel('Right Blink Duration')
+    plt.title('Left vs. Right Blink Duration')
+    plt.show()
+
+
+def plot_ibi_variability_boxplot(df):
+    """
+    Plots a boxplot of IBI (Inter-Blink Interval) variability for left eye, right eye,
+    and concatenated IBI data across all subjects.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the columns 'left_ibi_var', 'right_ibi_var',
+                       and 'concat_ibi_var'
+    """
+    plt.figure(figsize=(10, 6))
+
+    # Create a boxplot for the specified columns in the DataFrame
+    df.boxplot(column=['left_ibi_var', 'right_ibi_var', 'concat_ibi_var'])
+
+    plt.xlabel('Eye')
+    plt.ylabel('IBI Variability')
+    plt.title('IBI Variability Across Subjects')
+    plt.show()

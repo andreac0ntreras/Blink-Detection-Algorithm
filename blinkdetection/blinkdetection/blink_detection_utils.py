@@ -6,6 +6,7 @@ Email: titoghose@gmail.com
 GitHub code repository: github.com/titoghose
 """
 import numpy as np
+import pandas as pd
 
 
 def diff(series):
@@ -255,6 +256,9 @@ def single_pupil_blink_detection(pupil_size, sampling_freq, timestamps):
         blinks: [dictionary] {"blink_onset", "blink_offset"}
         containing numpy array/list of blink onset and offset timestamps
     """
+    # Turn series into np array for flexibility with indexing
+    timestamps = np.array(timestamps)
+    pupil_size = np.array(pupil_size)
 
     # sampling_interval represents the interval between samples in milliseconds. 1000/600=1.667ms
     sampling_interval = 1000 / sampling_freq
@@ -379,12 +383,7 @@ def single_pupil_blink_detection(pupil_size, sampling_freq, timestamps):
                 # Reassigns blink offset as the end of the monotonically_inc sequence
                 b_off += 1
             blink_offset[i] = b_off
-        # if not (monotonically_inc[b_off] and monotonically_dec[b_o]):
-        #     # If blink offset is not a part of a monotonically_inc sequence, delete it from the list
-        #     # of blink offsets and corresponding blink onset
-        #     blink_onset = np.delete(blink_onset, i)
-        #     blink_offset = np.delete(blink_offset, i)
-        #     i -= 1
+
         i += 1
 
     # Creating empty array the size of the blink onsets and offsets combined
@@ -414,10 +413,93 @@ def single_pupil_blink_detection(pupil_size, sampling_freq, timestamps):
         blinks and not realtime values
     """
 
-    blinks["blink_onset"] = timestamps[temp[:, 0]]
-    blinks["blink_offset"] = timestamps[temp[:, 1]]
+    if temp.size > 0:
+        blinks["blink_onset"] = timestamps[temp[:, 0]]
+        blinks["blink_offset"] = timestamps[temp[:, 1]]
+    else:
+        blinks["blink_onset"] = []
+        blinks["blink_offset"] = []
 
     return blinks
+
+
+def calculate_total_blinks_and_missing_data(df, sampling_freq, interval_time=2):
+    """
+    Calculate the total number of blinks and the percentage of missing data from pupil size data.
+
+    This function processes pupil size data and timestamps to detect blinks within specified intervals
+    and calculates the percentage of missing data points. It returns the blink onsets, blink offsets,
+    and the missing data percentage.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame containing columns 'pupil_size_left', 'pupil_size_right', and 'timestamps'.
+        sampling_freq (int): Sampling frequency of the data in Hz.
+        interval_time (int, optional): Time interval for processing data in seconds. Defaults to 2 seconds.
+
+    Returns:
+        dict: A dictionary containing 'blink_onset', 'blink_offset', and 'missing_data_percentage'.
+    """
+
+    # Extract pupil sizes and timestamps from the dataframe
+    pupil_size_left = df["pupil_size_left"]
+    pupil_size_right = df["pupil_size_right"]
+    timestamps = df["timestamps"]
+
+    # Calculate the interval size in samples
+    interval_size = int(interval_time * sampling_freq)
+
+    # Initialize lists to store blink onsets and offsets
+    blink_onsets = []
+    blink_offsets = []
+
+    # Initialize counters for total data points and missing data points
+    total_data_points = 0
+    total_missing_data = 0
+
+    # Iterate through the data in specified intervals
+    for start in range(0, len(pupil_size_left), interval_size):
+        end = min(start + interval_size, len(pupil_size_left))
+
+        # Get the interval data for both pupils
+        interval_left = pupil_size_left[start:end]
+        interval_right = pupil_size_right[start:end]
+        interval_timestamps = timestamps[start:end]
+
+        # Detect blinks in the interval for both pupils
+        blinks_left = single_pupil_blink_detection(interval_left, sampling_freq, interval_timestamps)
+        blinks_right = single_pupil_blink_detection(interval_right, sampling_freq, interval_timestamps)
+
+        # Calculate the amount of missing data for both pupils
+        missing_left = np.sum(np.isnan(interval_left))
+        missing_right = np.sum(np.isnan(interval_right))
+
+        # Update the counters for total data points and missing data points
+        total_data_points += len(interval_left)  # Assuming interval_left and interval_right are of the same length
+        total_missing_data += min(missing_left, missing_right)
+
+        # Use the blink data from the pupil with the least missing data
+        if missing_left <= missing_right:
+            blink_onsets.extend(blinks_left.get("blink_onset", []))
+            blink_offsets.extend(blinks_left.get("blink_offset", []))
+        else:
+            blink_onsets.extend(blinks_right.get("blink_onset", []))
+            blink_offsets.extend(blinks_right.get("blink_offset", []))
+
+    # Calculate the percentage of missing data
+    missing_data_percentage = (total_missing_data / total_data_points) * 100
+
+    return {
+        "blink_onset": blink_onsets,
+        "blink_offset": blink_offsets,
+        "missing_data_percentage": missing_data_percentage
+    }
+
+
+'''
+Below is a method for identifying blinks detected in the left and right eye that occur simultaneously from
+first running the single_pupil_blink_detection_algorithm on both streams of data and then inputting them into 
+this function.
+'''
 
 
 def identify_concat_blinks(left_blinks, right_blinks, tolerance=.15):
