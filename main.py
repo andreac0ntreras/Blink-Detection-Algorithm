@@ -12,7 +12,7 @@ interim_folder = 'output/interim'
 compiled_feature_df, compiled_blink_df = bd.process_csv_files(interim_folder)
 
 # Plot pupil size data over time with blink annotations for all CSV files in the specified folder.
-# bd.plot_all_time_v_pupil_size_csv_files_in_directory(interim_folder, show=True)
+bd.plot_all_time_v_pupil_size_csv_files_in_directory(interim_folder, show=True)
 
 # Plot missing data and blink rate over time
 # bd.plot_feature_over_three_days(compiled_df, show=True)

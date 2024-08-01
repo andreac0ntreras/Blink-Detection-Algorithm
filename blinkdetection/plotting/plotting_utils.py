@@ -136,6 +136,7 @@ def plot_all_time_v_pupil_size_csv_files_in_directory(folder, show=False):
 
         # Plot the pupil size data for the current CSV file
         plot_pupil_size_v_time_w_both_eyes_blink_onset_and_offsets(file_path, show=show)
+        plot_pupil_size_v_time(file_path, show=show)
 
     plt.clf()
 
