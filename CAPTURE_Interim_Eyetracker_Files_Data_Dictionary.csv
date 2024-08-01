@@ -1,0 +1,10 @@
+﻿device_name,Tobii Spectrum Pro,,,,,,
+sampling_freq,600,,,,,,
+source,csv,,,,,,
+encoding_format,UTF-8,,,,,,
+filepath:,interim/,,,,,,
+,,,,,,,
+field_name,description,data_type,unit_or_naming_scheme,range_min,range_max,calculation,data_category
+timestamps,The timestamp associated with the time at which the pupils are registered to be the corresponding size.,float,seconds,-,-,stream taken directly from raw XDF file,Time
+pupil_size_left,The measured size of the left pupil at the corresponding timestamp.,float,AU,-,-,stream taken directly from raw XDF file,Pupil Size
+pupil_size_right,The measured size of the right pupil at the corresponding timestamp.,float,AU,-,-,stream taken directly from raw XDF file,Pupil Size

@@ -64,7 +64,7 @@ def process_individual_feature_extraction_csv(csv_file, folder):
 
     # Calculate the concatenated onsets and offsets based on how closely the onsets and offsets of the left and right
     # pupil match
-    blinks = blink_detection_utils.calculate_total_blinks_and_missing_data(dataframe, 600, 2)
+    blinks = blink_detection_utils.calculate_total_blinks_and_missing_data(dataframe, 600)
 
     # Identify missing data indices for both pupil size columns
     left_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(
