@@ -7,42 +7,42 @@ import numpy as np
 
 def process_individual_feature_extraction_csv(csv_file, folder):
     """
-    Process an individual CSV file to calculate various features within the blink and pupil size data.
+    Process an individual CSV file to calculate various features related to blink detection and pupil size.
 
     Parameters:
         csv_file (str): Name of the CSV file to process.
         folder (str): Path to the folder containing the CSV file.
 
     Returns:
-    dict: A dictionary containing the following keys:
-        - 'subject': Subject ID extracted from the filename.
-        - 'day': Day number extracted from the filename.
-        - 'left_ebr': Average blink rate for the left pupil.
-        - 'right_ebr': Average blink rate for the right pupil.
-        - 'concat_ebr': Average blink rate considering concatenated blinks.
-        - 'left_ibi': Average inter-blink interval (IBI) for the left pupil.
-        - 'right_ibi': Average inter-blink interval (IBI) for the right pupil.
-        - 'concat_ibi': Average inter-blink interval (IBI) for concatenated blinks.
-        - 'left_ibi_var': Variability of inter-blink interval for the left pupil.
-        - 'right_ibi_var': Variability of inter-blink interval for the right pupil.
-        - 'concat_ibi_var': Variability of inter-blink interval for concatenated blinks.
-        - 'onset_diff': Mean difference between the time at which the left eye registered an onset vs the right eye.
-        - 'offset_diff': Mean difference between the time at which the left eye registered an offset vs the right eye.
-        - 'duration_diff': Mean difference between the durations of the blinks for the left eye vs the right eye.
-        - 'left_bd': Average blink duration for the left pupil.
-        - 'right_bd': Average blink duration for the right pupil.
-        - 'left_bdv': Variability of blink duration for the left pupil.
-        - 'right_bdv': Variability of blink duration for the right pupil.
-        - 'left_pupil_size': Average pupil size for the left pupil excluding blink periods.
-        - 'right_pupil_size': Average pupil size for the right pupil excluding blink periods.
-        - 'left_pupil_size_var': Variability of pupil size for the left pupil excluding blink periods.
-        - 'right_pupil_size_var': Variability of pupil size for the right pupil excluding blink periods.
-        - 'left_missing': Percentage of missing data for the left pupil.
-        - 'right_missing': Percentage of missing data for the right pupil.
-        - 'left_missing_exb': Percentage of missing data for the left pupil excluding blink periods.
-        - 'right_missing_exb': Percentage of missing data for the right pupil excluding blink periods.
-        - 'left_missing_exb_ext': Percentage of missing data for the left pupil excluding blink periods and a minimum time range (100ms).
-        - 'right_missing_exb_ext': Percentage of missing data for the right pupil excluding blink periods and a minimum time range (100ms).
+        dict: A dictionary containing the following keys:
+            - 'subject': Subject ID extracted from the filename.
+            - 'day': Day number extracted from the filename.
+            - 'ebr': Average blink rate considering both pupil streams.
+            - 'left_ebr': Average blink rate for the left pupil.
+            - 'right_ebr': Average blink rate for the right pupil.
+            - 'ibi': Average inter-blink interval (IBI) considering both pupil streams.
+            - 'left_ibi': Average inter-blink interval (IBI) for the left pupil.
+            - 'right_ibi': Average inter-blink interval (IBI) for the right pupil.
+            - 'ibi_var': Variability of inter-blink interval considering both pupil streams.
+            - 'left_ibi_var': Variability of inter-blink interval for the left pupil.
+            - 'right_ibi_var': Variability of inter-blink interval for the right pupil.
+            - 'onset_diff': Mean difference between the onset times of the left and right eye blinks.
+            - 'offset_diff': Mean difference between the offset times of the left and right eye blinks.
+            - 'duration_diff': Mean difference between the durations of the blinks for the left and right eyes.
+            - 'bd': Average blink duration considering both pupil streams.
+            - 'left_bd': Average blink duration for the left pupil.
+            - 'right_bd': Average blink duration for the right pupil.
+            - 'bdv': Variability of blink duration considering both pupil streams.
+            - 'left_bdv': Variability of blink duration for the left pupil.
+            - 'right_bdv': Variability of blink duration for the right pupil.
+            - 'left_pupil_size': Average pupil size for the left pupil excluding blink periods.
+            - 'right_pupil_size': Average pupil size for the right pupil excluding blink periods.
+            - 'left_pupil_size_var': Variability of pupil size for the left pupil excluding blink periods.
+            - 'right_pupil_size_var': Variability of pupil size for the right pupil excluding blink periods.
+            - 'left_missing': Percentage of missing data for the left pupil.
+            - 'right_missing': Percentage of missing data for the right pupil.
+            - 'left_missing_exb': Percentage of missing data for the left pupil excluding blink periods.
+            - 'right_missing_exb': Percentage of missing data for the right pupil excluding blink periods.
     """
     # Extract subject ID and day number from filename components
     subject_id, day_number = csv_file.split('_')[0], csv_file.split('_')[4].split('.')[0]
@@ -64,31 +64,23 @@ def process_individual_feature_extraction_csv(csv_file, folder):
 
     # Calculate the concatenated onsets and offsets based on how closely the onsets and offsets of the left and right
     # pupil match
-    blinks = blink_detection_utils.identify_concat_blinks(left_blinks, right_blinks)
+    blinks = blink_detection_utils.calculate_total_blinks_and_missing_data(dataframe, 600, 2)
 
     # Identify missing data indices for both pupil size columns
     left_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(
         pupil_size_left, left_blinks, timestamps)
 
-    # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
-    left_missing_data_excluding_blinks_and_time_window = feature_extraction_utils.missing_data_excluding_time_range(
-        left_missing_data_excluding_blinks, 600)
-
     # Calculate the average blink rate considering missing data periods
     left_average_blink_rate = feature_extraction_utils.calculate_blink_rate(
-        left_blinks, left_missing_data_excluding_blinks_and_time_window, 600)
+        left_blinks, left_missing_data_excluding_blinks, 600)
 
     # Identify missing data indices for both pupil size columns
     right_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_single_pupil(
         pupil_size_right, right_blinks, timestamps)
 
-    # Filter missing data indices to only include the relevant missing data (data where a blink can occur: over 100ms)
-    right_missing_data_excluding_blinks_and_time_window = feature_extraction_utils.missing_data_excluding_time_range(
-        right_missing_data_excluding_blinks, 600)
-
     # Calculate the average blink rate considering missing data periods
     right_average_blink_rate = feature_extraction_utils.calculate_blink_rate(
-        right_blinks, right_missing_data_excluding_blinks_and_time_window, 600)
+        right_blinks, right_missing_data_excluding_blinks, 600)
 
     concat_missing_data_excluding_blinks = feature_extraction_utils.missing_data_excluding_blinks_both_pupils(
         pupil_size_left, pupil_size_right, blinks, timestamps)
@@ -96,9 +88,13 @@ def process_individual_feature_extraction_csv(csv_file, folder):
     average_blink_rate = feature_extraction_utils.calculate_blink_rate(blinks,
                                                                        concat_missing_data_excluding_blinks, 600)
 
-    # Calculate average blink duration and blink duration variability
+    # Calculate average blink duration
+    blink_duration = feature_extraction_utils.calculate_average_blink_duration(blinks)
     left_average_blink_duration = feature_extraction_utils.calculate_average_blink_duration(left_blinks)
     right_average_blink_duration = feature_extraction_utils.calculate_average_blink_duration(right_blinks)
+
+    # Calculate blink duration variability
+    blink_duration_variability = feature_extraction_utils.calculate_blink_duration_variability(blinks)
     left_blink_duration_variability = feature_extraction_utils.calculate_blink_duration_variability(left_blinks)
     right_blink_duration_variability = feature_extraction_utils.calculate_blink_duration_variability(right_blinks)
 
@@ -135,20 +131,22 @@ def process_individual_feature_extraction_csv(csv_file, folder):
     return {
         'subject': subject_id,
         'day': day_number,
+        'ebr': average_blink_rate,
         'left_ebr': left_average_blink_rate,
         'right_ebr': right_average_blink_rate,
-        'concat_ebr': average_blink_rate,
+        'ibi': concat_avg_ibi,
         'left_ibi': left_avg_ibi,
         'right_ibi': right_avg_ibi,
-        'concat_ibi': concat_avg_ibi,
+        'ibi_var': concat_ibi_var,
         'left_ibi_var': left_ibi_var,
         'right_ibi_var': right_ibi_var,
-        'concat_ibi_var': concat_ibi_var,
         'onset_diff': onset_diff,
         'offset_diff' : offset_diff,
         'duration_diff': duration_diff,
+        'bd': blink_duration,
         'left_bd': left_average_blink_duration,
         'right_bd': right_average_blink_duration,
+        'bdv': blink_duration_variability,
         'left_bdv': left_blink_duration_variability,
         'right_bdv': right_blink_duration_variability,
         'left_pupil_size': left_avg_pupil_size,
@@ -158,11 +156,7 @@ def process_individual_feature_extraction_csv(csv_file, folder):
         'left_missing': np.mean(np.isnan(pupil_size_left)),
         'right_missing': np.mean(np.isnan(pupil_size_right)),
         'left_missing_exb': np.mean(left_missing_data_excluding_blinks),
-        'right_missing_exb': np.mean(right_missing_data_excluding_blinks),
-        'left_missing_exb_ext': np.mean(
-            left_missing_data_excluding_blinks_and_time_window),
-        'right_missing_exb_ext': np.mean(
-            right_missing_data_excluding_blinks_and_time_window)
+        'right_missing_exb': np.mean(right_missing_data_excluding_blinks)
     }
 
 
@@ -211,15 +205,19 @@ def process_individual_blink_csv(csv_file, folder):
     concat_onsets = np.array(blinks["blink_onset"])
     concat_offsets = np.array(blinks["blink_offset"])
 
+    interval_based_blinks = blink_detection_utils.calculate_total_blinks_and_missing_data(dataframe, 600)
+
     return {
         'subject': subject_id,
         'day': day_number,
-        'left_blink_onsets': left_blinks["blink_onset"].values,
-        'left_blink_offsets': left_blinks["blink_offset"].values,
-        'right_blink_onsets': right_blinks["blink_onset"].values,
-        'right_blink_offsets': right_blinks["blink_offset"].values,
+        'left_blink_onsets': left_blinks["blink_onset"],
+        'left_blink_offsets': left_blinks["blink_offset"],
+        'right_blink_onsets': right_blinks["blink_onset"],
+        'right_blink_offsets': right_blinks["blink_offset"],
         'concat_onsets': concat_onsets,
         'concat_offsets': concat_offsets,
+        'interval_based_blink_onsets': interval_based_blinks["blink_onset"],
+        'interval_based_blink_offsets': interval_based_blinks["blink_offset"]
     }
 
 

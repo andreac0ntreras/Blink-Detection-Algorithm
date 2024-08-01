@@ -16,17 +16,3 @@ compiled_feature_df, compiled_blink_df = bd.process_csv_files(interim_folder)
 
 # Plot missing data and blink rate over time
 # bd.plot_feature_over_three_days(compiled_df, show=True)
-
-"""
-             Anova
-================================
-    F Value Num DF Den DF Pr > F
---------------------------------
-day  0.9166 2.0000 8.0000 0.4381
-================================
-
-
-There is no statistically significant difference in the average blink rate across the three days for each subject.
-The p-value of 0.4381 indicates that any observed differences in blink rate are likely due to random variation
-rather than an effect of the day.
-"""

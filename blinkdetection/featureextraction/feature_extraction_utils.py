@@ -1,4 +1,5 @@
 import numpy as np
+import blinkdetection as bd
 
 
 def calculate_blink_rate(blinks, missing_values, sampling_freq):
@@ -310,11 +311,6 @@ def pupil_size_variability(pupil_size, timestamps, blinks):
     blink_onset = blinks['blink_onset']
     blink_offset = blinks['blink_offset']
 
-    # Check if the blink onset or offset series is empty
-    if blink_onset.empty or blink_offset.empty:
-        print("Blink onset or offset series is empty.")
-        return float('nan')
-
     # Remove NaN values from pupil_size and the corresponding timestamps
     valid_mask = ~pupil_size.isna()
     pupil_size = pupil_size[valid_mask]
@@ -419,46 +415,59 @@ def missing_data_excluding_blinks_single_pupil(pupil_size, blinks, timestamps):
     return missing_data
 
 
-def missing_data_excluding_time_range(bool_array_of_missing_values, sampling_freq):
+def calculate_missing_data_excluding_blinks(df, sampling_freq, interval_time=2):
     """
-    This function iterates through a boolean array representing missing data
-    and identifies consecutive groups of True values. It then filters out groups
-    shorter than a specified duration (considered irrelevant gaps because a blink could
-    not occur during the gap).
+    Calculate the percentage of missing data excluding blinks from pupil size data.
+
+    This function processes pupil size data and timestamps to calculate the percentage
+    of missing data points that are not caused by blinks within specified intervals.
 
     Parameters:
-        bool_array_of_missing_values (np.array): Boolean array where True indicates missing data.
-        (Generated from missing_data_excluding_blinks_single_pupil or missing_data_excluding_blinks_both_pupils)
+        df (pd.DataFrame): DataFrame containing columns 'pupil_size_left', 'pupil_size_right', and 'timestamps'.
         sampling_freq (int): Sampling frequency of the data in Hz.
+        interval_time (int, optional): Time interval for processing data in seconds. Defaults to 2 seconds.
 
     Returns:
-        filtered_missing_values (np.array): Boolean array with the same shape as the input,
-              where True indicates filtered missing data intervals
-              (excluding short gaps).
+        total_missing_data_excluding_blinks (np.ndarray): Boolean array indicating missing values
+        (True if missing, False otherwise).
+        missing_data_percentage_excluding_blinks (float): The percentage of missing data excluding blinks.
     """
 
-    # Minimum number of samples representing 100ms (considered noise)
-    min_samples_for_100ms = int(sampling_freq * 0.1)  # 100ms = 0.1 seconds
+    # Extract pupil sizes and timestamps from the dataframe
+    pupil_size_left = df["pupil_size_left"]
+    pupil_size_right = df["pupil_size_right"]
+    timestamps = df["timestamps"]
 
-    # Create a copy of the input array for modification
-    filtered_missing_values = np.copy(bool_array_of_missing_values)
+    # Calculate the interval size in samples
+    interval_size = int(interval_time * sampling_freq)
 
-    # Iterate through the boolean array to find and filter short missing data groups
-    i = 0
-    while i < len(bool_array_of_missing_values):
-        if bool_array_of_missing_values[i]:
-            # Start of a missing data group
-            start = i
-            while i < len(bool_array_of_missing_values) and bool_array_of_missing_values[i]:
-                i += 1
-            end = i  # end is exclusive
+    # Initialize a list to store missing data flags excluding blinks
+    total_missing_data_excluding_blinks = []
 
-            # Check the duration of the missing data group (in number of samples)
-            num_samples = end - start
-            if num_samples < min_samples_for_100ms:
-                # Set these values to False in the output array (considered noise)
-                filtered_missing_values[start:end] = False
+    # Iterate through the data in specified intervals
+    for start in range(0, len(pupil_size_left), interval_size):
+        end = min(start + interval_size, len(pupil_size_left))
+
+        # Extract interval data for both pupils
+        interval_left = pupil_size_left[start:end]
+        interval_right = pupil_size_right[start:end]
+        interval_timestamps = timestamps[start:end]
+
+        # Detect blinks in the interval for both pupils
+        blinks_left = bd.single_pupil_blink_detection(interval_left, sampling_freq, interval_timestamps)
+        blinks_right = bd.single_pupil_blink_detection(interval_right, sampling_freq, interval_timestamps)
+
+        # Identify missing data excluding blinks for both pupils
+        missing_excluding_blinks_left = missing_data_excluding_blinks_single_pupil(interval_left, blinks_left, interval_timestamps)
+        missing_excluding_blinks_right = missing_data_excluding_blinks_single_pupil(interval_right, blinks_right, interval_timestamps)
+
+        # Determine which pupil has less missing data and use its result
+        if np.sum(np.isnan(interval_left)) <= np.sum(np.isnan(interval_right)):
+            total_missing_data_excluding_blinks.extend(missing_excluding_blinks_left)
         else:
-            i += 1
+            total_missing_data_excluding_blinks.extend(missing_excluding_blinks_right)
 
-    return filtered_missing_values
+    # Calculate the percentage of missing data excluding blinks
+    missing_data_percentage_excluding_blinks = np.mean(total_missing_data_excluding_blinks) * 100
+
+    return total_missing_data_excluding_blinks, missing_data_percentage_excluding_blinks
