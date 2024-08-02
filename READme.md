@@ -35,27 +35,17 @@ seaborn
 ```
 
 ## Sourcing
-Within the project directory, there are three directories. The data directory (_data/raw/XDF Files_) contains the raw data from the
-OWDM experiment, which we will be analyzing. The raw data is in the form of XDF files, where one of the streams 
-contains the eye tracker timeseries data and the eyetracker specs. To extract the relevant eyetracker information from the XDF files
-(**timestamps, left_pupil_size, and right_pupil_size**), run the following line of code in the main.py file.
-```doctest
-# Define folder paths
-folder_path = 'data/raw/XDF Files'
-interim_folder = 'output/interim'
+Use the code listed in this repository:
+https://git.ihmc.us/human-performance/projects/hrp/capture/xdf-parsers/xdf-eyetracker-parser/-/tree/main
+to convert the raw data to interim files (located in the _interim_ directory) which we will be using to extract features and blinks from the participant's data.
 
-# Process the XDF files
-bd.process_xdf_files(folder_path, interim_folder)
-```
-
-This line of code uses functions from the sourcing folder in the blinkdetection package to convert the raw XDF Files to interim CSV files 
-that contain the relevant variables
+The data dictionary for the interim files is located in the file
+_CAPTURE_Interim_Eyetracker_Files_Data_Dictionary.csv_
 
 ## Blink Detection and Feature Extraction
-After generating an interim CSV file containing the pupil sizes and timestamps for each day and participant, 
-we can now implement our blink detection algorithm. 
+We can now implement our blink detection algorithm. 
 
-The interim CSV files containing the pupil sizes and timestamps for each day and subject are located in the _output/interim/_ directory
+The interim CSV files containing the pupil sizes and timestamps for each day and subject are located in the _interim/_ directory
 
 By running the following line in the main.py file, output CSV files called
 _compiled_feature_extraction.csv_ and _compiled_blink_extraction.csv_ are 
@@ -90,8 +80,7 @@ bd.plot_all_time_v_pupil_size_csv_files_in_directory(interim_folder, show=True)
 ```
 
 ## Remainder of Main
-The remainder of main is experimental code that does an ANOVA test to see if there are consistent differences among blink 
-rates across the three days for the participants, the code also generates graphs like the following:
+The remainder of main is experimental code that generates graphs like the following:
 ![img.png](img.png)
 ![img_2.png](img_2.png)
 Using this line of code 
